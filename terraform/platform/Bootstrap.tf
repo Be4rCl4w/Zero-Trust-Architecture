@@ -310,7 +310,7 @@ resource "azurerm_key_vault_secret" "github_app_key" {
   value            = var.github_app_key
   key_vault_id     = azurerm_key_vault.kv.id
 
-  content_type = "application/x-pem-file"
+  #content_type = "application/x-pem-file"
 
   depends_on = [azurerm_key_vault.kv, azurerm_role_assignment.deployer_kv_officer]
 }
@@ -336,7 +336,7 @@ resource "azurerm_container_registry" "acr" {
   location                      = azurerm_resource_group.rg["Demo-RG1"].location
   sku                           = "Standard"
   admin_enabled                 = false
-  public_network_access_enabled = false
+  #public_network_access_enabled = false
   anonymous_pull_enabled        = false
 }
 
@@ -394,7 +394,7 @@ resource "azurerm_container_app_job" "runner" {
   secret {
     name                = "github-app-key"
     identity            = azurerm_user_assigned_identity.runner.id
-    key_vault_secret_id = azurerm_key_vault_secret.github_app_key.versionless_id
+    key_vault_secret_id = azurerm_key_vault_secret.github_pat_token.versionless_id
   }
 
   event_trigger_config {
@@ -417,15 +417,16 @@ resource "azurerm_container_app_job" "runner" {
           repos                     = var.github_repo   # ignored for org scope
           labels                    = var.runner_labels
           targetWorkflowQueueLength = "1"
-          applicationID             = var.github_app_id
-          installationID            = var.github_app_installation_id
+          #applicationID             = var.github_app_id
+          #installationID            = var.github_app_installation_id
           enableEtags               = "true"
         }
 
         authentication {
-          secret_name       = "github-app-key"
-          trigger_parameter = "appKey"
+          secret_name       = "github-pat-token"
+          trigger_parameter = "personalAccessToken"
         }
+        identity_id = azurerm_user_assigned_identity.runner.id
       }
     }
   }
@@ -461,17 +462,17 @@ resource "azurerm_container_app_job" "runner" {
         name = "REGISTRATION_TOKEN_API_URL"
         value = var.reg_token_url
       }
+      #env {
+        #name  = "GITHUB_APP_ID"
+        #value = var.github_app_id
+      #}
+      #env {
+        #name  = "GITHUB_APP_INSTALLATION_ID"
+        #value = var.github_app_installation_id
+      #}
       env {
-        name  = "GITHUB_APP_ID"
-        value = var.github_app_id
-      }
-      env {
-        name  = "GITHUB_APP_INSTALLATION_ID"
-        value = var.github_app_installation_id
-      }
-      env {
-        name        = "GITHUB_APP_KEY"
-        secret_name = "github-app-key"
+        name        = "GITHUB_PAT_TOKEN"
+        secret_name = "github-pat-token"
       }
     }
   }
@@ -483,7 +484,7 @@ resource "azurerm_container_app_job" "runner" {
 
   depends_on = [
     azurerm_role_assignment.acr_pull,
-    azurerm_key_vault_secret.github_app_key,
+    azurerm_key_vault_secret.github_pat_token,
     terraform_data.build_image
   ]
   

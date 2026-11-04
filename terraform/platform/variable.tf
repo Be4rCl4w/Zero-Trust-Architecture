@@ -4,7 +4,7 @@ variable "prefix"          {
   default = "ghrunner" 
 }
 
-variable "github_app_key" {
+variable "github_pat_token" {
   type    = string
   sensitive = true
 }
@@ -30,12 +30,12 @@ variable "github_repo" {
   default = "Zero-Trust-Architecture"  
 }        
 
-variable "github_app_id" { 
-  type = number
-}
-variable "github_app_installation_id" {
-  type = number
-}
+#variable "github_app_id" { 
+  #type = number
+#}
+#variable "github_app_installation_id" {
+  #type = number
+#}
 
 variable "runner_labels" { 
   type = string
