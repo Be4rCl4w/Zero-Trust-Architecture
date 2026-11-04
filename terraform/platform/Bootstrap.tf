@@ -304,7 +304,7 @@ resource "azurerm_key_vault" "kv" {
   public_network_access_enabled = true
 }
 
-# 3. GitHub App Private Key Secret
+# 3. GitHub PAT Secret
 resource "azurerm_key_vault_secret" "github_pat_token" {
   name             = "github-pat-token"
   value            = var.github_pat_token
