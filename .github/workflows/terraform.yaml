@@ -1,0 +1,225 @@
+name: Terraform Azure Deploy
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'terraform/**'
+
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'terraform/**'
+
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write  
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  ARM_USE_OIDC: true
+
+jobs:
+  changes:
+    runs-on: self-hosted
+    outputs:
+      workload: ${{ steps.filter.outputs.workload }}
+      policy: ${{ steps.filter.outputs.policy }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            workload:
+              - 'terraform/workload/**'
+            policy:
+              - 'terraform/policy/**'
+
+  policy:
+    needs: changes
+    if: needs.changes.outputs.policy == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: self-hosted
+    environment: production
+    defaults:
+      run:
+        working-directory: terraform/policy
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.11.4
+          terraform_wrapper: true
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        continue-on-error: true
+        run: terraform plan -input=false -out=trfplan
+
+      - name: Comment plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          STACK: policy
+          PLAN_OUTCOME: ${{ steps.plan.outcome }}
+          PLAN_STDOUT: ${{ steps.plan.outputs.stdout }}
+          PLAN_STDERR: ${{ steps.plan.outputs.stderr }}
+        with:
+          script: |
+            const stack = process.env.STACK;
+            const marker = `<!-- terraform-plan-${stack} -->`;
+            const ok = process.env.PLAN_OUTCOME === 'success';
+            let output = ok ? process.env.PLAN_STDOUT : (process.env.PLAN_STDERR || process.env.PLAN_STDOUT);
+            const max = 60000;
+            if (output.length > max) {
+              output = output.slice(0, max) + '\n\n... output truncated, see workflow logs for the full plan ...';
+            }
+            const body = [
+              marker,
+              `### Terraform Plan: \`${stack}\` ${ok ? '✅' : '❌'}`,
+              '',
+              '<details><summary>Show plan</summary>',
+              '',
+              '```terraform',
+              output,
+              '```',
+              '',
+              '</details>',
+              '',
+              `*Commit: ${context.sha.slice(0, 7)} · [Workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})*`,
+            ].join('\n');
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number,
+            });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+
+      - name: Fail if plan failed
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trfplan
+          path: terraform/policy/trfplan
+
+      - name: Terraform Apply
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: terraform apply -input=false -auto-approve "trfplan"
+
+
+  workload:
+    needs: changes
+    if: needs.changes.outputs.workload == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: self-hosted
+    environment: production
+    defaults:
+      run:
+        working-directory: terraform/workload
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.11.4
+          terraform_wrapper: true
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        continue-on-error: true
+        env:
+          TF_VAR_vmss_public_key: ${{ vars.VMSS_PUBLIC_KEY }}
+          TF_VAR_object_id: ${{ secrets.ADMIN_OBJECT_ID }}
+        run: terraform plan -input=false -out=tfplan
+
+
+      - name: Comment plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          STACK: workload
+          PLAN_OUTCOME: ${{ steps.plan.outcome }}
+          PLAN_STDOUT: ${{ steps.plan.outputs.stdout }}
+          PLAN_STDERR: ${{ steps.plan.outputs.stderr }}
+        with:
+          script: |
+            const stack = process.env.STACK;
+            const marker = `<!-- terraform-plan-${stack} -->`;
+            const ok = process.env.PLAN_OUTCOME === 'success';
+            let output = ok ? process.env.PLAN_STDOUT : (process.env.PLAN_STDERR || process.env.PLAN_STDOUT);
+            const max = 60000;
+            if (output.length > max) {
+              output = output.slice(0, max) + '\n\n... output truncated, see workflow logs for the full plan ...';
+            }
+            const body = [
+              marker,
+              `### Terraform Plan: \`${stack}\` ${ok ? '✅' : '❌'}`,
+              '',
+              '<details><summary>Show plan</summary>',
+              '',
+              '```terraform',
+              output,
+              '```',
+              '',
+              '</details>',
+              '',
+              `*Commit: ${context.sha.slice(0, 7)} · [Workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})*`,
+            ].join('\n');
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number,
+            });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+
+      - name: Fail if plan failed
+        if: steps.plan.outcome == 'failure'
+        run: exit 1  
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: terraform/workload/tfplan
+
+      - name: Terraform Apply
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'  
+        env:
+          TF_VAR_vmss_public_key: ${{ vars.VMSS_PUBLIC_KEY }}
+          TF_VAR_object_id: ${{ secrets.ADMIN_OBJECT_ID }}
+        run: terraform apply -input=false -auto-approve "tfplan"
+
+  

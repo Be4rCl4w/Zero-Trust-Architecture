@@ -1,0 +1,49 @@
+name: Github Self-hosted image
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'Dockerfile'
+      - 'entrypoint.sh'
+
+  workflow_dispatch:
+
+  
+
+permissions:
+  id-token: write
+  contents: read
+ 
+jobs:
+  image_build:
+    runs-on: self-hosted
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Calculate Container Image Tag Hash
+        id: get_tag
+        run: |
+          HASH=$(cat Dockerfile entrypoint.sh | md5sum | awk '{print $1}')
+    
+          echo "tag=${HASH}" >> $GITHUB_OUTPUT
+
+      - name: Build image
+        run: az acr build --registry myghrunneracr123 --image gh-runner:${{ steps.get_tag.outputs.tag }} .
+
+      - name: Directly Update Job Image without Terraform
+        run: |
+          az containerapp job update \
+            --name "caj-ghrunner" \
+            --resource-group "Demo-RG1" \
+            --container-name "runner" \
+            --image "myghrunneracr123.azurecr.io/gh-runner:${{ steps.get_tag.outputs.tag }}

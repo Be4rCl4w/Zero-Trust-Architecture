@@ -1,0 +1,9 @@
+# Ignore local terraform binaries and locks causing the permission crash
+**/.terraform/
+**/*.tfstate*
+**/.terraform.lock.hcl
+
+# Ignore local windows system or git objects
+.git/
+.gitignore
+.dockerignore
