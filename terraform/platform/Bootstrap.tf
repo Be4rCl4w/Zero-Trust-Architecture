@@ -305,9 +305,9 @@ resource "azurerm_key_vault" "kv" {
 }
 
 # 3. GitHub App Private Key Secret
-resource "azurerm_key_vault_secret" "github_app_key" {
-  name             = "github-app-key"
-  value            = var.github_app_key
+resource "azurerm_key_vault_secret" "github_pat_token" {
+  name             = "github-pat-token"
+  value            = var.github_pat_token
   key_vault_id     = azurerm_key_vault.kv.id
 
   #content_type = "application/x-pem-file"
