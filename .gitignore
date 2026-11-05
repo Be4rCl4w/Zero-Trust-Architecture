@@ -7,3 +7,4 @@ vmss_key.pub
 terraform.tfstate
 terraform.tfstate.backup
 runner-token
+.terraform/
