@@ -83,12 +83,26 @@ resource "azuread_service_principal" "github_deploy" {
   client_id = azuread_application.github_deploy.client_id
 }
 
+resource "azuread_application" "github_PR" {
+  display_name = "github-PR"
+}
+
+resource "azuread_service_principal" "github_PR" {
+  client_id = azuread_application.github_PR.client_id
+}
+
 resource "azurerm_role_assignment" "deployer_cert_officer" {
   scope                = azurerm_key_vault.kv.id
   role_definition_name = "Key Vault Certificates Officer"
   principal_id         = azuread_service_principal.github_deploy.object_id
 
    depends_on = [azurerm_key_vault.kv]
+}
+
+resource "azurerm_role_assignment" "github_actions_PR" {
+  scope                = data.azurerm_subscription.current.id
+  role_definition_name = "Reader"
+  principal_id         = azuread_service_principal.github_PR.object_id
 }
 
 resource "azurerm_role_assignment" "contributor" {
@@ -180,6 +194,15 @@ resource "azuread_application_federated_identity_credential" "github_branch" {
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
   subject        = "repo:Be4rCl4w@121987346/Zero-Trust-Architecture@1430910856:environment:production"
+}
+
+resource "azuread_application_federated_identity_credential" "github_PR" {
+  application_id = azuread_application.github_PR.id
+  display_name   = "github-PR-CRED"
+  description    = "Federated credential for GitHub Actions PR."
+  audiences      = ["api://AzureADTokenExchange"]
+  issuer         = "https://token.actions.githubusercontent.com"
+  subject        = "repo:Be4rCl4w@121987346/Zero-Trust-Architecture@1430910856:pull_request"
 }
 
 resource "azurerm_storage_account" "tfstate" {
@@ -488,64 +511,4 @@ resource "azurerm_container_app_job" "runner" {
     terraform_data.build_image
   ]
   
-}
-
-
-locals {
-  Hub_subnets = {
-    "AzureBastionSubnet"  = "10.0.1.0/27"
-    "AzureFirewallSubnet" = "10.0.0.0/26"
-    "AppGatewaySubnet"    = "10.0.2.0/26"
-  }
-}
-
-locals {
-  Spoke_subnets = {
-    "WebSubnet" = {
-      address_prefix = "10.20.0.0/24"
-      delegate       = true # delegation
-    }
-    "AppSubnet" = {
-      address_prefix = "10.20.1.0/24"
-      delegate       = false # No delegation
-    }
-    "DataSubnet" = {
-      address_prefix = "10.20.3.0/24"
-      delegate       = false # No delegation
-    }
-    "PrivateEndpointSubnet" = {
-      address_prefix = "10.20.4.0/24"
-      delegate       = false # No delegation
-    }
-  }
-}
-
-resource "azurerm_subnet" "Spoke_vnet_subnets" {
-  for_each             = local.Spoke_subnets
-  name                 = each.key
-  resource_group_name  = azurerm_resource_group.rg["Demo-RG1"].name
-  virtual_network_name = azurerm_virtual_network.Spoke_vnet.name
-  address_prefixes     = [each.value.address_prefix]
-
-  # Conditionally add delegation block using dynamic
-  dynamic "delegation" {
-    for_each = each.value.delegate ? [1] : []
-
-    content {
-      name = "app-service-delegation"
-
-      service_delegation {
-        name    = "Microsoft.Web/serverFarms"
-        actions = ["Microsoft.Network/virtualNetworks/subnets/action"]
-      }
-    }
-  }
-}
-
-resource "azurerm_subnet" "Hub_vnet_subnets" {
-  for_each             = local.Hub_subnets
-  name                 = each.key
-  resource_group_name  = azurerm_resource_group.rg["Demo-RG1"].name
-  virtual_network_name = azurerm_virtual_network.Hub_vnet.name
-  address_prefixes     = [each.value]
 }

@@ -177,7 +177,7 @@ resource "azurerm_firewall" "firewall" {
 resource "azurerm_firewall_application_rule_collection" "fwrc" {
   name                = "testcollection"
   azure_firewall_name = azurerm_firewall.firewall.name
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
   priority            = 100
   action              = "Allow"
 
