@@ -25,7 +25,7 @@ defaults:
 jobs:
   plan:
     if: github.event_name == 'pull_request'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     # No environment: uses the pull_request federated credential
     steps:
       - name: Checkout code
@@ -100,7 +100,7 @@ jobs:
 
   apply:
     if: github.event_name == 'push'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     environment: production   # approval gate + environment federated credential
     steps:
       - name: Checkout code
