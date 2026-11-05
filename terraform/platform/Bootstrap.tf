@@ -100,7 +100,7 @@ resource "azurerm_role_assignment" "deployer_cert_officer" {
 }
 
 resource "azurerm_role_assignment" "github_actions_PR" {
-  scope                = data.azurerm_subscription.current.id
+  scope                = data.azurerm_subscription.primary.id
   role_definition_name = "Reader"
   principal_id         = azuread_service_principal.github_PR.object_id
 }
