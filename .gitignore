@@ -1,8 +1,8 @@
 *.pem
 vmss_key
 vmss_key.pub
-**./terraform\*
-**./terraform/
+**\terraform\**
+**/terraform/**
 .terraform.*
 terraform.tfstate
 terraform.tfstate.backup

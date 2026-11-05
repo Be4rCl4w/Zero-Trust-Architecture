@@ -392,7 +392,7 @@ resource "azurerm_container_app_job" "runner" {
   }
 
   secret {
-    name                = "github-app-key"
+    name                = "github-pat-token"
     identity            = azurerm_user_assigned_identity.runner.id
     key_vault_secret_id = azurerm_key_vault_secret.github_pat_token.versionless_id
   }

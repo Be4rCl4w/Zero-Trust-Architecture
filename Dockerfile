@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       curl jq git sudo ca-certificates openssl nodejs unzip \
     && rm -rf /var/lib/apt/lists/*
 
+RUN useradd -m runner
 WORKDIR /home/runner/actions-runner
 
 RUN curl -fsSL "https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz" \
