@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'terraform/policy/**'
+      - 'terraform/policies/**'
 
   workflow_dispatch:
 
@@ -14,7 +14,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: terraform/policy
+    working-directory: terraform/policies
 
 jobs:
   policy:
