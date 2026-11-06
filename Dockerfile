@@ -6,11 +6,20 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      curl jq git sudo ca-certificates openssl unzip \
-    && rm -rf /var/lib/apt/lists/*
-
-
-RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && apt-get install -y nodejs
+    curl \
+    jq \
+    git \
+    sudo \
+    ca-certificates \
+    openssl \
+    unzip \
+    apt-transport-https \
+    lsb-release \
+    gnupg \
+&& curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+&& apt-get install -y nodejs \
+&& curl -sL https://aka.ms/InstallAzureCLIDeb | bash \
+&& rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m runner
 WORKDIR /home/runner/actions-runner
