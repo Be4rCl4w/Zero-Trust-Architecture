@@ -61,10 +61,17 @@ resource "azurerm_role_definition" "enterprise_iac_role" {
       "Microsoft.DocumentDB/*",
       "Microsoft.Cache/*",
       "Microsoft.DBforPostgreSQL/*",
-      "Microsoft.DBforMySQL/*"
+      "Microsoft.DBforMySQL/*",
+      "Microsoft.Authorization/policyAssignments/*",
+      "Microsoft.Authorization/policyDefinitions/*",
+      "Microsoft.Authorization/policyExemptions/*",
+      "Microsoft.Authorization/policySetDefinitions/*",
+      "Microsoft.PolicyInsights/*"
     ]
     not_actions = [
-      "Microsoft.Authorization/*"
+      "Microsoft.Authorization/roleAssignments/*",
+      "Microsoft.Authorization/roleDefinitions/*",
+      "Microsoft.Authorization/locks/*"
     ]
     data_actions     = []
     not_data_actions = []
@@ -122,13 +129,13 @@ resource "azurerm_role_assignment" "delegated_cicd_assignment" {
   condition_version = "2.0"
 
   # This condition restricts the pipeline to assigning ONLY specific, 
-  # pre-approved data and runtime roles to Service Principals. (Storage Blob Data Contributor, Key Vault Secrets User,Key Vault Crypto User,Key Vault Certificate User, AcrPull, Monitoring Metrics Publisher)
+  # pre-approved data and runtime roles to Service Principals. (Storage Blob Data Contributor, Key Vault Secrets User,Key Vault Crypto User,Key Vault Certificate User, AcrPull, Monitoring Metrics Publisher, Log Analytics Contributor, Tag Contributor, Monitoring Contributor)
   condition = <<EOF
 (
   !(ActionMatches{'Microsoft.Authorization/roleAssignments/write'})
   OR
   (
-    @Request[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {ba92f5b4-2d11-453d-a403-e96b0029c9fe, 4633458b-17de-408a-b874-0445c86b69e6, 12338af0-0e69-4050-8b5d-48842dcc471d, 00482a5a-887f-4fb3-b363-3b7fe8e74483, 7f951dda-4ed3-4680-a7ca-43fe172d538d, 3913510d-42f4-4e42-8a64-42c3c92534ca}
+    @Request[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {ba92f5b4-2d11-453d-a403-e96b0029c9fe, 4633458b-17de-408a-b874-0445c86b69e6, 12338af0-0e69-4050-8b5d-48842dcc471d, db79e9a7-68ee-4b58-9aeb-b90e7c24fcba, 4a9ae827-6dc8-4573-8ac7-8239d42aa03f, 749f88d5-cbae-40b8-bcfc-e573ddc772fa, 7f951dda-4ed3-4680-a7ca-43fe172d538d, 3913510d-42f4-4e42-8a64-42c3c92534ca, 92aaf0da-9dab-42b6-94a3-d43ce8d16293}
     AND
     @Request[Microsoft.Authorization/roleAssignments:PrincipalType] ForAnyOfAnyValues:StringEqualsIgnoreCase {'ServicePrincipal'}
   )

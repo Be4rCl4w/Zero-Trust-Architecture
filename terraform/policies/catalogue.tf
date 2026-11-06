@@ -257,6 +257,7 @@ resource "azurerm_role_assignment" "baseline_tag_contributor" {
   scope                = data.azurerm_resource_group.rg.id
   role_definition_name = "Tag Contributor"
   principal_id         = azurerm_resource_group_policy_assignment.baseline.identity[0].principal_id
+  principal_type       = "ServicePrincipal"
 }
 
 ############################################
@@ -302,12 +303,14 @@ resource "azurerm_role_assignment" "logging_monitoring_contributor" {
   scope                = data.azurerm_resource_group.rg.id
   role_definition_name = "Monitoring Contributor"
   principal_id         = azurerm_resource_group_policy_assignment.logging.identity[0].principal_id
+  principal_type       = "ServicePrincipal"
 }
 
 resource "azurerm_role_assignment" "logging_law_contributor" {
   scope                = data.azurerm_log_analytics_workspace.law.id
   role_definition_name = "Log Analytics Contributor"
   principal_id         = azurerm_resource_group_policy_assignment.logging.identity[0].principal_id
+  principal_type       = "ServicePrincipal"
 }
 
 ############################################
