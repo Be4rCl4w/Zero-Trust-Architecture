@@ -243,17 +243,37 @@ resource "azurerm_virtual_network" "Spoke_vnet" {
   address_space       = ["10.20.0.0/16"]
 }
 
-resource "azurerm_subnet" "aca" {
-  name                 = "ACA-JobSubnet"
+locals {
+  subnets = {
+    "AzureFirewallSubnet" = {
+      address_prefix = "10.0.0.0/26"
+      delegate       = false # No delegation
+    }
+    "ACA-JobSubnet" = {
+      address_prefix = "10.0.3.0/26"
+      delegate       = true # delegation
+    }
+  }
+}
+
+resource "azurerm_subnet" "vnet_subnets" {
+  for_each             = local.subnets
+  name                 = each.key
   resource_group_name  = azurerm_resource_group.rg["Demo-RG1"].name
   virtual_network_name = azurerm_virtual_network.Hub_vnet.name
-  address_prefixes     = ["10.0.3.0/26"]
+  address_prefixes     = [each.value.address_prefix]
 
-  delegation {
-    name = "aca"
-    service_delegation {
-      name    = "Microsoft.App/environments"
-      actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
+  # Conditionally add delegation block using dynamic
+  dynamic "delegation" {
+    for_each = each.value.delegate ? [1] : []
+
+    content {
+      name = "aca-delegation"
+
+      service_delegation {
+        name    = "Microsoft.App/environments"
+        actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
+      }
     }
   }
 }
@@ -292,7 +312,7 @@ resource "azurerm_network_security_group" "github_runner" {
 }
 
 resource "azurerm_subnet_network_security_group_association" "github_runner" {
-  subnet_id                 = azurerm_subnet.aca.id
+  subnet_id                 = azurerm_subnet.vnet_subnets["ACA-JobSubnet"].id
   network_security_group_id = azurerm_network_security_group.github_runner.id
 }
 
@@ -383,7 +403,7 @@ resource "azurerm_container_app_environment" "env" {
   resource_group_name        = azurerm_resource_group.rg["Demo-RG1"].name
   logs_destination           = "log-analytics" 
   log_analytics_workspace_id = data.azurerm_log_analytics_workspace.law.id
-  infrastructure_subnet_id   = azurerm_subnet.aca.id
+  infrastructure_subnet_id   = azurerm_subnet.vnet_subnets["ACA-JobSubnet"].id
   internal_load_balancer_enabled = false
   public_network_access      = "Disabled"
 
@@ -512,3 +532,7 @@ resource "azurerm_container_app_job" "runner" {
   ]
   
 }
+
+
+
+

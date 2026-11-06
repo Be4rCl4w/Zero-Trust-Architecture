@@ -45,6 +45,12 @@ data "azurerm_subnet" "aca" {
   resource_group_name  = "Demo-RG1"
 }
 
+data "azurerm_subnet" "firewall" {
+  name                 = "AzureFirewallSubnet"
+  virtual_network_name = "Hub_demo_vnet"
+  resource_group_name  = "Demo-RG1"
+}
+
 data "azurerm_container_registry" "acr" {
   name                = "myghrunneracr123"
   resource_group_name = "Demo-RG1"
@@ -79,7 +85,6 @@ resource "azurerm_user_assigned_identity" "appgw_identity" {
 locals {
   Hub_subnets = {
     "AzureBastionSubnet"  = "10.0.1.0/27"
-    "AzureFirewallSubnet" = "10.0.0.0/26"
     "AppGatewaySubnet"    = "10.0.2.0/26"
   }
 }
@@ -166,7 +171,7 @@ resource "azurerm_firewall" "firewall" {
 
   ip_configuration {
     name                 = "FW_configuration"
-    subnet_id            = azurerm_subnet.Hub_vnet_subnets["AzureFirewallSubnet"].id
+    subnet_id            = data.azurerm_subnet.firewall.id
     public_ip_address_id = azurerm_public_ip.public_ip["AzureFirewall"].id
   }
 
