@@ -456,8 +456,8 @@ resource "azurerm_network_security_group" "web" {
     access                       = "Allow"
     protocol                     = "Tcp"
     source_port_range            = "*"
-    destination_port_ranges       = ["22", "443"]
-    source_address_prefixes      = azurerm_subnet.aca.address_prefixes
+    destination_port_ranges      = ["22", "443"]
+    source_address_prefixes      = data.azurerm_subnet.aca.address_prefixes
     destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["WebSubnet"].address_prefixes
     description                  = "GitHub Runner access"
   }
@@ -556,8 +556,8 @@ resource "azurerm_network_security_group" "app" {
     access                       = "Allow"
     protocol                     = "Tcp"
     source_port_range            = "*"
-    destination_port_ranges       = ["22", "443"]
-    source_address_prefixes      = azurerm_subnet.aca.address_prefixes
+    destination_port_ranges      = ["22", "443"]
+    source_address_prefixes      = data.azurerm_subnet.aca.address_prefixes
     destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["AppSubnet"].address_prefixes
     description                  = "GitHub Runner access"
   }
