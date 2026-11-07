@@ -143,8 +143,8 @@ resource "azurerm_subnet" "Hub_vnet_subnets" {
 locals {
   Public_ip_addresses = [
     "AppGateway",
-    "AzureFirewall",
-    "AzureBastion"
+    "AzureFirewall" #Remember to add the comma
+    #"AzureBastion" 
   ]
 
   app_gw_dns_prefix = "mydemozero-trust-app" 
@@ -230,19 +230,19 @@ resource "azurerm_subnet_route_table_association" "route-ghr" {
 }
 
 
-resource "azurerm_bastion_host" "bastion" {
-  name                = "demo_bastion"
-  location            = data.azurerm_resource_group.rg.location
-  resource_group_name = data.azurerm_resource_group.rg.name
-  sku                 = "Standard"
-  tunneling_enabled   = true
+#resource "azurerm_bastion_host" "bastion" {
+  #name                = "demo_bastion"
+  #location            = data.azurerm_resource_group.rg.location
+  #resource_group_name = data.azurerm_resource_group.rg.name
+  #sku                 = "Standard"
+  #tunneling_enabled   = true
 
-  ip_configuration {
-    name                 = "demo_bastion_ip_config"
-    subnet_id            = azurerm_subnet.Hub_vnet_subnets["AzureBastionSubnet"].id
-    public_ip_address_id = azurerm_public_ip.public_ip["AzureBastion"].id
-  }
-}
+  #ip_configuration {
+    #name                 = "demo_bastion_ip_config"
+    #subnet_id            = azurerm_subnet.Hub_vnet_subnets["AzureBastionSubnet"].id
+    #public_ip_address_id = azurerm_public_ip.public_ip["AzureBastion"].id
+  #}
+#}
 
 locals {
   dns_zones = {
