@@ -61,12 +61,6 @@ data "azurerm_key_vault" "kv" {
   resource_group_name = "Demo-RG1"
 }
 
-data "azurerm_key_vault_secret" "github_app_private_key" {
-  name         = "github-app-private-key"
-  key_vault_id = data.azurerm_key_vault.kv.id
-}
-
-
 resource "azurerm_application_insights" "appi" {
   name                = "demo-appi"
   location            = data.azurerm_resource_group.rg.location
