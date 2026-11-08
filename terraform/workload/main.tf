@@ -715,6 +715,7 @@ resource "azurerm_application_gateway" "appgw" {
 
   backend_address_pool {
     name = "backendPool"
+    fqdns = [azurerm_linux_web_app.webapp.default_hostname]
   }
 
   backend_http_settings {
@@ -773,7 +774,7 @@ resource "azurerm_application_gateway" "appgw" {
 
   ssl_certificate {
     name                = "sslCert"
-    key_vault_secret_id = azurerm_key_vault_certificate.tls_cert.secret_id
+    key_vault_secret_id = azurerm_key_vault_certificate.tls_cert.versionless_id
   }
 
   identity {
@@ -1088,7 +1089,7 @@ resource "azurerm_key_vault_certificate" "tls_cert" {
     }
 
     x509_certificate_properties {
-      subject            = "CN=://mydemozero-trust-app.northeurope.cloudapp.azure.com"
+      subject            = "CN=${azurerm_public_ip.public_ip["AppGateway"].fqdn}"
       validity_in_months = 12
 
       key_usage = [
@@ -1100,7 +1101,33 @@ resource "azurerm_key_vault_certificate" "tls_cert" {
         "keyEncipherment"
       ]
     }
+
+    lifetime_action {
+      action {
+        action_type = "AutoRenew"
+      }
+      trigger {
+        lifetime_percentage = 80
+      }
+    }
   }
 }
 
 
+
+output "appgw_public_ip" {
+  value = azurerm_public_ip.public_ip["AppGateway"].ip_address
+}
+
+output "appgw_fqdn" {
+  value = azurerm_public_ip.public_ip["AppGateway"].fqdn
+}
+
+output "https_url" {
+  description = "Browse here (expect a certificate warning, the cert is self-signed)"
+  value       = "https://${azurerm_public_ip.public_ip["AppGateway"].fqdn}"
+}
+
+output "webapp_default_hostname" {
+  value = azurerm_linux_web_app.webapp.default_hostname
+}
