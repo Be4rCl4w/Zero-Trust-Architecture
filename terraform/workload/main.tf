@@ -718,13 +718,29 @@ resource "azurerm_application_gateway" "appgw" {
     fqdns = [azurerm_linux_web_app.webapp.default_hostname]
   }
 
+  probe {
+    name                                      = demo-probe
+    protocol                                  = "Https"
+    path                                      = "/"
+    interval                                  = 30
+    timeout                                   = 30
+    unhealthy_threshold                       = 3
+    pick_host_name_from_backend_http_settings = true
+
+    match {
+      status_code = ["200-399"]
+    }
+  }
+
   backend_http_settings {
-    name                  = "backendHttpSettings"
-    cookie_based_affinity = "Disabled"
-    port                  = 443
-    path                  = "/"
-    protocol              = "Https"
-    request_timeout       = 30
+    name                                = "backendHttpSettings"
+    cookie_based_affinity               = "Disabled"
+    port                                = 443
+    path                                = "/"
+    protocol                            = "Https"
+    request_timeout                     = 30
+    pick_host_name_from_backend_address = true
+    probe_name                          = demo-probe
   }
 
   # --- LISTENERS ---
@@ -774,7 +790,12 @@ resource "azurerm_application_gateway" "appgw" {
 
   ssl_certificate {
     name                = "sslCert"
-    key_vault_secret_id = azurerm_key_vault_certificate.tls_cert.versionless_id
+    key_vault_secret_id = azurerm_key_vault_certificate.tls_cert.versionless_secret_id
+  }
+
+  ssl_policy {
+    policy_type = "Predefined"
+    policy_name = "AppGwSslPolicy20220101"
   }
 
   identity {
@@ -1100,6 +1121,11 @@ resource "azurerm_key_vault_certificate" "tls_cert" {
         "keyCertSign",
         "keyEncipherment"
       ]
+      extended_key_usage = ["1.3.6.1.5.5.7.3.1"] # serverAuth
+
+      subject_alternative_names {
+        dns_names = [azurerm_public_ip.public_ip["AppGateway"].fqdn]
+      }
     }
 
     lifetime_action {
