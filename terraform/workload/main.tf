@@ -719,7 +719,7 @@ resource "azurerm_application_gateway" "appgw" {
   }
 
   probe {
-    name                                      = demo-probe
+    name                                      = "demo-probe"
     protocol                                  = "Https"
     path                                      = "/"
     interval                                  = 30
@@ -740,7 +740,7 @@ resource "azurerm_application_gateway" "appgw" {
     protocol                            = "Https"
     request_timeout                     = 30
     pick_host_name_from_backend_address = true
-    probe_name                          = demo-probe
+    probe_name                          = "demo-probe"
   }
 
   # --- LISTENERS ---
