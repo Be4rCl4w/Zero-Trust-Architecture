@@ -188,14 +188,34 @@ resource "azurerm_firewall_application_rule_collection" "fwrc" {
       "10.0.3.0/24"
     ]
 
-    target_fqdns = [
-      "*.google.com", "*.microsoft.com", "*.github.com", "*.azure.com", "*.windows.com", "github.com", "*.actions.githubusercontent.com", "*.githubusercontent.com", "*.data.mcr.microsoft.com", "*.ubuntu.com"
+     target_fqdns = [
+      "github.com", "*.github.com", "*.actions.githubusercontent.com",
+      "*.githubusercontent.com", "*.blob.core.windows.net",
+      "*.azurecr.io", "*.vault.azure.net", "login.microsoftonline.com",
+      "*.azure.com", "*.microsoft.com", "mcr.microsoft.com", "*.data.mcr.microsoft.com",
+      "releases.hashicorp.com", "registry.terraform.io", "*.ubuntu.com"
     ]
 
     protocol {
       port = "443"
       type = "Https"
     }
+  }
+}
+
+resource "azurerm_firewall_network_rule_collection" "aca" {
+  name                = "aca-required"
+  azure_firewall_name = azurerm_firewall.firewall.name
+  resource_group_name = data.azurerm_resource_group.rg.name
+  priority            = 110
+  action              = "Allow"
+
+  rule {
+    name                  = "aca-service-tags"
+    source_addresses      = ["10.0.3.0/26"]
+    destination_addresses = ["MicrosoftContainerRegistry", "AzureFrontDoor.FirstParty", "AzureActiveDirectory", "AzureContainerRegistry", "AzureKeyVault"]
+    destination_ports     = ["443"]
+    protocols             = ["TCP"]
   }
 }
 
