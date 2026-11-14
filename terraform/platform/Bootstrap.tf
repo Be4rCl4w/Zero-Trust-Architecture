@@ -384,7 +384,7 @@ resource "azurerm_container_registry" "acr" {
   name                          = "myghrunneracr123"
   resource_group_name           = azurerm_resource_group.rg["Demo-RG1"].name
   location                      = azurerm_resource_group.rg["Demo-RG1"].location
-  sku                           = "Standard"
+  sku                           = "Premium"
   admin_enabled                 = false
   #public_network_access_enabled = false
   anonymous_pull_enabled        = false
@@ -394,7 +394,7 @@ resource "azurerm_container_registry" "acr" {
 resource "terraform_data" "build_image" {
   provisioner "local-exec" {
     # Ensure your local execution context is authenticated via Azure CLI (az login) before running
-    command = "az acr build --registry ${azurerm_container_registry.acr.name} --image gh-runner:v1.0 ."
+    command = "az acr build --registry ${azurerm_container_registry.acr.name} --image gh-runner:v1.1.0 ."
 
     working_dir = "${path.module}/../../"
   }
@@ -484,7 +484,7 @@ resource "azurerm_container_app_job" "runner" {
   template {
     container {
       name   = "runner"
-      image  = "${azurerm_container_registry.acr.login_server}/gh-runner:v1.0"
+      image  = "${azurerm_container_registry.acr.login_server}/gh-runner:v1.1.0"
       cpu    = "0.25"    
       memory = "0.5Gi"
 
