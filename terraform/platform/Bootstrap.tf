@@ -66,7 +66,9 @@ resource "azurerm_role_definition" "enterprise_iac_role" {
       "Microsoft.Authorization/policyDefinitions/*",
       "Microsoft.Authorization/policyExemptions/*",
       "Microsoft.Authorization/policySetDefinitions/*",
-      "Microsoft.PolicyInsights/*"
+      "Microsoft.PolicyInsights/*",
+      "Microsoft.Insights/*",
+      "Microsoft.OperationalInsights/*"
     ]
     not_actions = [
       "Microsoft.Authorization/roleAssignments/*",

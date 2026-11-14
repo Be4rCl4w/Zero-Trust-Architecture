@@ -616,6 +616,19 @@ resource "azurerm_network_security_group" "app" {
   }
 
   security_rule {
+    name                         = "app-out-for-AADSSHLoginForLinux-setup"
+    priority                     = 400
+    direction                    = "Outbound"
+    access                       = "Allow"
+    protocol                     = "Tcp"
+    source_port_range            = "*"
+    destination_port_ranges      = ["80", "443"]
+    source_address_prefixes      = azurerm_subnet.Spoke_vnet_subnets["AppSubnet"].address_prefixes
+    destination_address_prefix   = "Internet"
+    description                  = "Allow outbound to internet for AADSSHLoginForLinux setup"
+  }
+
+  security_rule {
     name                       = "app-out-deny-all"
     priority                   = 4096
     direction                  = "Outbound"
