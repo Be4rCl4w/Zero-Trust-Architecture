@@ -1088,7 +1088,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
   }
 
   # Read and Base64-encode your cloud-init.yml file
-  custom_data = filebase64("${path.module}/cloud-init.yml")
+  custom_data = filebase64("${path.module}/../../cloud-init.yaml")
 
   depends_on = [
     azurerm_lb_rule.http
