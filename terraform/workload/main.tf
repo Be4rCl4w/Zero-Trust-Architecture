@@ -705,7 +705,7 @@ resource "azurerm_network_security_group" "pe" {
     protocol                     = "Tcp"
     source_port_range            = "*"
     destination_port_range       = "443"
-    source_address_prefixes      = data.azurerm_subnet.aca["ACA-JobSubnet"].address_prefixes
+    source_address_prefixes      = data.azurerm_subnet.aca.address_prefixes
     destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].address_prefixes
     description                  = "ACA to ACR private endpoint"
   }
@@ -990,8 +990,8 @@ resource "azurerm_linux_web_app" "webapp" {
 
 resource "azurerm_lb" "lb" {
   name                = "my-lb"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  location            = data.azurerm_resource_group.rg.location
+  resource_group_name = data.azurerm_resource_group.rg.name
   sku                 = "Standard"
 
   frontend_ip_configuration {
