@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNN SUG Elections 2026</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<base target="_blank">
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 font-sans">
+    <header class="bg-emerald-800 text-white shadow-md">
+        <div class="max-w-4xl mx-auto px-4 py-6 flex flex-col sm:flex-row justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">University of Nigeria, Nsukka</h1>
+                <p class="text-emerald-200 text-sm">SUG Executive Council Elections - Secure Voting Portal</p>
+            </div>
+            <div class="mt-4 sm:mt-0 flex space-x-2">
+                <button onclick="switchTab('vote')" id="btn-vote" class="px-4 py-2 bg-emerald-900 rounded font-medium transition cursor-pointer">Cast Vote</button>
+                <button onclick="switchTab('results')" id="btn-results" class="px-4 py-2 bg-emerald-700 rounded font-medium transition cursor-pointer">Live Results</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <!-- VOTE SECTION -->
+        <section id="tab-vote" class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <h2 class="text-xl font-semibold mb-4 text-emerald-900">Cast Your Ballot</h2>
+            <p class="text-sm text-slate-600 mb-6">Enter your valid University Registration/Matriculation Number and select your presidential candidate.</p>
+
+            <div id="alert-box" class="hidden mb-4 p-4 rounded-lg text-sm"></div>
+
+            <form id="vote-form" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Matriculation / Registration Number</label>
+                    <input type="text" id="voterId" required placeholder="e.g. 2023/123456" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-3">Contesting Candidates</label>
+                    <div id="candidates-container" class="space-y-3">
+                        <p class="text-slate-500 text-sm">Loading candidates...</p>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-emerald-800 text-white py-3 rounded-lg font-semibold hover:bg-emerald-900 transition cursor-pointer">Submit Vote</button>
+            </form>
+        </section>
+
+        <!-- RESULTS SECTION -->
+        <section id="tab-results" class="bg-white rounded-xl shadow-sm p-6 border border-slate-200 hidden">
+            <h2 class="text-xl font-semibold mb-4 text-emerald-900">Live Election Results</h2>
+            <p class="text-sm text-slate-600 mb-6">Real-time vote tally directly queried from the secure database backend.</p>
+
+            <div id="results-container" class="space-y-4">
+                <p class="text-slate-500 text-sm">Loading results...</p>
+            </div>
+            <button onclick="loadCandidatesAndResults()" class="mt-6 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-medium transition cursor-pointer">Refresh Results</button>
+        </section>
+    </main>
+
+    <script>
+        // The web tier proxies /api to the internal API tier, so a relative path is all we need.
+        // localhost branch is for local development against server.js on port 3000.
+        const API_BASE_URL = window.location.hostname === 'localhost'
+            ? 'http://localhost:3000/api'
+            : '/api';
+
+        // Escape user/DB-controlled values before injecting into innerHTML (prevents stored XSS)
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, (ch) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[ch]));
+        }
+
+        function switchTab(tab) {
+            const voteTab = document.getElementById('tab-vote');
+            const resultsTab = document.getElementById('tab-results');
+            const btnVote = document.getElementById('btn-vote');
+            const btnResults = document.getElementById('btn-results');
+            const active = 'px-4 py-2 bg-emerald-900 rounded font-medium transition cursor-pointer';
+            const inactive = 'px-4 py-2 bg-emerald-700 rounded font-medium transition cursor-pointer';
+
+            if (tab === 'vote') {
+                voteTab.classList.remove('hidden');
+                resultsTab.classList.add('hidden');
+                btnVote.className = active;
+                btnResults.className = inactive;
+            } else {
+                voteTab.classList.add('hidden');
+                resultsTab.classList.remove('hidden');
+                btnVote.className = inactive;
+                btnResults.className = active;
+                loadCandidatesAndResults();
+            }
+        }
+
+        async function loadCandidatesAndResults() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/candidates`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const candidates = await response.json();
+
+                const container = document.getElementById('candidates-container');
+                container.innerHTML = '';
+
+                const resultsContainer = document.getElementById('results-container');
+                resultsContainer.innerHTML = '';
+
+                const totalVotes = candidates.reduce((sum, c) => sum + (c.VoteCount || 0), 0);
+
+                candidates.forEach((c) => {
+                    const name = escapeHtml(c.Name);
+                    const dept = escapeHtml(c.Department);
+                    const voteCount = c.VoteCount || 0;
+                    const percentage = totalVotes > 0 ? ((voteCount / totalVotes) * 100).toFixed(1) : '0.0';
+
+                    container.innerHTML += `
+                        <label class="flex items-center p-4 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
+                            <input type="radio" name="candidateId" value="${Number(c.Id)}" required class="h-4 w-4 text-emerald-600 focus:ring-emerald-500">
+                            <div class="ml-4">
+                                <span class="block font-semibold text-slate-900">${name}</span>
+                                <span class="text-sm text-slate-500">Department of ${dept}</span>
+                            </div>
+                        </label>
+                    `;
+
+                    resultsContainer.innerHTML += `
+                        <div class="p-4 border border-slate-100 rounded-lg bg-slate-50">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-semibold text-slate-900">${name} <span class="text-xs font-normal text-slate-500">(${dept})</span></span>
+                                <span class="font-bold text-emerald-800">${voteCount} votes (${percentage}%)</span>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2.5">
+                                <div class="bg-emerald-600 h-2.5 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (err) {
+                console.error('Failed to fetch candidates:', err);
+                document.getElementById('candidates-container').innerHTML =
+                    '<p class="text-red-600 text-sm">Could not load candidates. Please try again later.</p>';
+            }
+        }
+
+        document.getElementById('vote-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const voterId = document.getElementById('voterId').value.trim();
+            const selected = document.querySelector('input[name="candidateId"]:checked');
+            const alertBox = document.getElementById('alert-box');
+
+            if (!selected) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/vote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ voterId, candidateId: parseInt(selected.value, 10) })
+                });
+
+                const data = await response.json();
+                alertBox.classList.remove('hidden');
+
+                if (response.ok) {
+                    alertBox.className = 'mb-4 p-4 rounded-lg text-sm bg-emerald-100 text-emerald-800 border border-emerald-200';
+                    alertBox.textContent = data.message;
+                    document.getElementById('vote-form').reset();
+                    loadCandidatesAndResults(); // refresh tallies so the results tab is current
+                } else {
+                    alertBox.className = 'mb-4 p-4 rounded-lg text-sm bg-red-100 text-red-800 border border-red-200';
+                    alertBox.textContent = data.error || 'Failed to submit vote.';
+                }
+            } catch (err) {
+                alertBox.classList.remove('hidden');
+                alertBox.className = 'mb-4 p-4 rounded-lg text-sm bg-red-100 text-red-800 border border-red-200';
+                alertBox.textContent = 'Network error connecting to API backend.';
+            }
+        });
+
+        loadCandidatesAndResults();
+    </script>
+</body>
+</html>

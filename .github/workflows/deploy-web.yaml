@@ -1,0 +1,155 @@
+name: Deploy Web Tier to Linux App Service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - '.github/workflows/deploy-web.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  test:
+    name: Test
+    runs-on: [self-hosted, linux]
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: 'web/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  # ------------------------------------------------------------------
+  # 2. Web tier (proxy server + index.html) -> App Service, via the private endpoint
+  # ------------------------------------------------------------------
+  deploy-web:
+    name: Deploy Web Tier
+    needs: test
+    runs-on: [self-hosted, linux]
+    env:
+      RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
+      APP: ${{ secrets.AZURE_WEBAPP_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: 'web/package-lock.json'
+
+      # SCM_DO_BUILD_DURING_DEPLOYMENT is "false", so ship node_modules in the package.
+      # A clean dist/ keeps tests and dev dependencies out of production.
+      - name: Build deployment package
+        run: |
+          rm -rf dist && mkdir dist
+          cp web/server.js web/package.json web/package-lock.json web/startup.sh web/index.html dist/
+          sed -i 's/\r$//' dist/startup.sh     # guard against CRLF breaking the sh script
+          cd dist
+          npm ci --omit=dev
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Fail early, with a clear message, if the runner can't reach the app privately.
+      # The deploy endpoint (SCM) must resolve to the private endpoint's IP from this runner.
+      - name: Check private connectivity to the web app
+        id: net
+        run: |
+          WEB_HOST=$(az webapp show -g "$RG" -n "$APP" --query defaultHostName -o tsv)
+          SCM_HOST=$(az webapp show -g "$RG" -n "$APP" \
+            --query "hostNameSslStates[?hostType=='Repository'].name | [0]" -o tsv)
+          echo "web_host=$WEB_HOST" >> "$GITHUB_OUTPUT"
+
+          SCM_IP=$(getent hosts "$SCM_HOST" | awk '{print $1}' | head -n1)
+          echo "$SCM_HOST resolves to: ${SCM_IP:-<nothing>}"
+
+          case "$SCM_IP" in
+            10.*|172.1[6-9].*|172.2[0-9].*|172.3[0-1].*|192.168.*) ;;
+            *)
+              echo "ERROR: $SCM_HOST does not resolve to a private IP from this runner." >&2
+              echo "Link the privatelink.azurewebsites.net DNS zone to the runner's VNet." >&2
+              exit 1 ;;
+          esac
+
+          curl -sS --max-time 10 -o /dev/null "https://$SCM_HOST" \
+            || { echo "ERROR: runner cannot reach $SCM_HOST on 443 (check NSG/peering)." >&2; exit 1; }
+
+      - name: Deploy to App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          package: './dist'
+
+      # Layer 1: hit the web app directly through its private endpoint
+      - name: Smoke test web app (private endpoint)
+        run: |
+          URL="https://${{ steps.net.outputs.web_host }}"
+          for i in {1..18}; do
+            if curl -fsS --max-time 10 "$URL/healthz" | grep -q "ok" \
+               && curl -fsS --max-time 10 "$URL/" | grep -q "UNN SUG" \
+               && curl -fsS --max-time 10 "$URL/api/health" | grep -q '"Healthy"'; then
+              echo "OK: web app serves the page and its /api proxy reaches the API tier."
+              exit 0
+            fi
+            echo "Waiting for web app... ($i/18)"
+            sleep 10
+          done
+          echo "CRITICAL: web app failed the private smoke test!" >&2
+          exit 1
+
+      - name: Fetch App Gateway public certificate
+        run: |
+          az keyvault certificate download \
+            --vault-name "${{ secrets.KEY_VAULT_NAME }}" \
+            --name appgw-listener-cert \
+            --file "$RUNNER_TEMP/appgw.pem" \
+            --encoding PEM    
+
+
+      # Layer 2: the full public path through App Gateway + WAF
+      - name: Smoke test via App Gateway
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          for i in {1..12}; do
+            if curl -fsS --cacert "$RUNNER_TEMP/appgw.pem" --max-time 10 "$APP_URL/" | grep -q "UNN SUG" \
+               && curl -fsS --cacert "$RUNNER_TEMP/appgw.pem" --max-time 10 "$APP_URL/api/health" | grep -q '"Healthy"'; then
+              echo "OK: $APP_URL works end-to-end."
+              exit 0
+            fi
+            echo "Waiting for App Gateway path... ($i/12)"
+            sleep 10
+          done
+          echo "CRITICAL: $APP_URL failed the end-to-end smoke test!" >&2
+          exit 1
+
+      - name: Clean up build output
+        if: always()
+        run: rm -rf dist

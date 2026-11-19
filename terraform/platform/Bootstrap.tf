@@ -108,6 +108,12 @@ resource "azurerm_role_assignment" "deployer_cert_officer" {
    depends_on = [azurerm_key_vault.kv]
 }
 
+resource "azurerm_role_assignment" "gh_kv_cert_reader" {
+  scope                = azurerm_key_vault.kv.id
+  role_definition_name = "Key Vault Certificate User"
+  principal_id         = azuread_service_principal.github_deploy.object_id
+}
+
 resource "azurerm_role_assignment" "github_actions_PR" {
   scope                = data.azurerm_subscription.primary.id
   role_definition_name = "Reader"

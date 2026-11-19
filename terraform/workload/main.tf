@@ -87,21 +87,28 @@ locals {
   Spoke_subnets = {
     "WebSubnet" = {
       address_prefix = "10.20.0.0/24"
-      delegate       = true # delegation
+      delegate       = true # delegation (App Service VNet integration, outbound only)
+      pe_policies    = "Disabled"
     }
     "AppSubnet" = {
       address_prefix = "10.20.1.0/24"
-      delegate       = false # No delegation
+      delegate       = false
+      pe_policies    = "Disabled"
     }
     "DataSubnet" = {
       address_prefix = "10.20.3.0/24"
-      delegate       = false # No delegation
+      delegate       = false
+      pe_policies    = "Enabled"
     }
     "PrivateEndpointSubnet" = {
       address_prefix = "10.20.4.0/24"
-      delegate       = false # No delegation
+      delegate       = false
+      pe_policies    = "Enabled" # makes NSG rules apply to private endpoints
     }
   }
+
+  # Static private frontend IP of the internal load balancer
+  app_lb_private_ip = cidrhost(local.Spoke_subnets["AppSubnet"].address_prefix, 10)
 }
 
 resource "azurerm_subnet" "Spoke_vnet_subnets" {
@@ -110,6 +117,8 @@ resource "azurerm_subnet" "Spoke_vnet_subnets" {
   resource_group_name  = data.azurerm_resource_group.rg.name
   virtual_network_name = data.azurerm_virtual_network.Spoke_vnet.name
   address_prefixes     = [each.value.address_prefix]
+
+  private_endpoint_network_policies = each.value.pe_policies
 
   # Conditionally add delegation block using dynamic
   dynamic "delegation" {
@@ -141,7 +150,7 @@ locals {
     #"AzureBastion" 
   ]
 
-  app_gw_dns_prefix = "mydemozero-trust-app" 
+  app_gw_dns_prefix = "zero-trust-voteapp" 
 }
 
 resource "azurerm_public_ip" "public_ip" {
@@ -260,49 +269,63 @@ resource "azurerm_subnet_route_table_association" "route-ghr" {
 
 locals {
   dns_zones = {
-    sql    = "privatelink.database.windows.net"
-    kv     = "privatelink.vaultcore.azure.net"
-    webapp = "privatelink.azurewebsites.net"
-    acr    = "privatelink.azurecr.io"
+    sql = {
+      name    = "privatelink.database.windows.net"
+      vnet_id = data.azurerm_virtual_network.Spoke_vnet.id   # <-- different VNet for SQL
+    }
+    kv = {
+      name    = "privatelink.vaultcore.azure.net"
+      vnet_id = data.azurerm_virtual_network.Hub_vnet.id
+    }
+    webapp = {
+      name    = "privatelink.azurewebsites.net"
+      vnet_id = data.azurerm_virtual_network.Hub_vnet.id
+    }
+    acr = {
+      name    = "privatelink.azurecr.io"
+      vnet_id = data.azurerm_virtual_network.Hub_vnet.id
+    }
   }
 }
 
 resource "azurerm_private_dns_zone" "private_dns_zone" {
   for_each            = local.dns_zones
-  name                = each.value
+  name                = each.value.name
   resource_group_name = data.azurerm_resource_group.rg.name
 }
-
 
 resource "azurerm_private_dns_zone_virtual_network_link" "private_dns_link" {
   for_each              = local.dns_zones
   name                  = "demo_${each.key}_link"
-  private_dns_zone_id = azurerm_private_dns_zone.private_dns_zone[each.key].id  
-  virtual_network_id    = data.azurerm_virtual_network.Hub_vnet.id
+  private_dns_zone_id = azurerm_private_dns_zone.private_dns_zone[each.key].id
+  virtual_network_id    = each.value.vnet_id
 }
 
 locals {
-  # Consolidated map containing everything needed to deploy private endpoints
   endpoints_config = {
     sql = {
-      dns_key      = "sql"
-      resource_id  = azurerm_mssql_server.sql_server.id
-      subresource  = "sqlServer"
+      dns_key     = "sql"
+      resource_id = azurerm_mssql_server.sql_server.id
+      subresource = "sqlServer"
+      subnet_id   = azurerm_subnet.Spoke_vnet_subnets["DataSubnet"].id   # <-- different subnet for SQL
     }
     kv = {
-      dns_key      = "kv"
-      resource_id  = data.azurerm_key_vault.kv.id
-      subresource  = "vault"
+      dns_key     = "kv"
+      resource_id = data.azurerm_key_vault.kv.id
+      subresource = "vault"
+      subnet_id   = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].id
     }
     webapp = {
-      dns_key      = "webapp"
-      resource_id  = azurerm_linux_web_app.webapp.id
-      subresource  = "sites"
+      dns_key     = "webapp"
+      resource_id = azurerm_linux_web_app.webapp.id
+      subresource = "sites"
+      subnet_id   = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].id
     }
     acr = {
-      dns_key      = "acr"
-      resource_id  = data.azurerm_container_registry.acr.id
-      subresource  = "registry"
+      dns_key     = "acr"
+      resource_id = data.azurerm_container_registry.acr.id
+      subresource = "registry"
+      subnet_id   = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].id
     }
   }
 }
@@ -312,7 +335,7 @@ resource "azurerm_private_endpoint" "private_endpoint" {
   name                = "${each.key}-private-endpoint"
   location            = data.azurerm_resource_group.rg.location
   resource_group_name = data.azurerm_resource_group.rg.name
-  subnet_id           = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].id
+  subnet_id           = each.value.subnet_id
 
   private_service_connection {
     name                           = "${each.key}-privateserviceconnection"
@@ -396,7 +419,7 @@ resource "azurerm_network_security_group" "appgw" {
     source_port_range            = "*"
     destination_port_range       = "80"
     source_address_prefixes      = azurerm_subnet.Hub_vnet_subnets["AppGatewaySubnet"].address_prefixes
-    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["WebSubnet"].address_prefixes
+    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["PrivateSubnet"].address_prefixes
     description                  = "App Gateway to web tier on port 80"
   }
 
@@ -407,7 +430,7 @@ resource "azurerm_network_security_group" "appgw" {
     access                       = "Allow"
     protocol                     = "Tcp"
     source_port_range            = "*"
-    destination_port_range       = "443"
+    destination_port_ranges      = ["443", "80"]
     source_address_prefixes      = azurerm_subnet.Hub_vnet_subnets["AppGatewaySubnet"].address_prefixes
     destination_address_prefix   = "Internet" # Added to allow CRL verification & backend communications
     description                  = "Allow outbound to internet for CRL verification"
@@ -451,34 +474,8 @@ resource "azurerm_network_security_group" "web" {
   resource_group_name = data.azurerm_resource_group.rg.name
 
   security_rule {
-    name                         = "web-in-http"
-    priority                     = 100
-    direction                    = "Inbound"
-    access                       = "Allow"
-    protocol                     = "Tcp"
-    source_port_range            = "*"
-    destination_port_range       = "80"
-    source_address_prefixes      = azurerm_subnet.Hub_vnet_subnets["AppGatewaySubnet"].address_prefixes
-    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["WebSubnet"].address_prefixes
-    description                  = "HTTP from App Gateway subnet"
-  }
-
-  security_rule {
-    name                         = "web-in-github-runner"
-    priority                     = 200
-    direction                    = "Inbound"
-    access                       = "Allow"
-    protocol                     = "Tcp"
-    source_port_range            = "*"
-    destination_port_ranges      = ["22", "443"]
-    source_address_prefixes      = data.azurerm_subnet.aca.address_prefixes
-    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["WebSubnet"].address_prefixes
-    description                  = "GitHub Runner access"
-  }
-
-  security_rule {
     name                       = "web-in-deny-all"
-    priority                   = 4096
+    priority                   = 100
     direction                  = "Inbound"
     access                     = "Deny"
     protocol                   = "*"
@@ -489,30 +486,18 @@ resource "azurerm_network_security_group" "web" {
     description                = "Explicit deny all inbound"
   }
 
+  # Proxy calls the LB frontend on 80 (source-side NSG sees the pre-NAT destination)
   security_rule {
-    name                         = "web-out-to-app"
-    priority                     = 100
-    direction                    = "Outbound"
-    access                       = "Allow"
-    protocol                     = "Tcp"
-    source_port_range            = "*"
-    destination_port_range       = "80"
-    source_address_prefixes      = azurerm_subnet.Spoke_vnet_subnets["WebSubnet"].address_prefixes
-    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["AppSubnet"].address_prefixes
-    description                  = "Web to app tier"
-  }
-
-  security_rule {
-    name                         = "web-out-to-kv"
-    priority                     = 300
-    direction                    = "Outbound"
-    access                       = "Allow"
-    protocol                     = "Tcp"
-    source_port_range            = "*"
-    destination_port_range       = "443"
-    source_address_prefixes      = azurerm_subnet.Spoke_vnet_subnets["WebSubnet"].address_prefixes
-    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].address_prefixes
-    description                  = "Web to Key Vault"
+    name                       = "web-out-to-app-lb"
+    priority                   = 200
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_ranges    = ["80", "8080", "3000"]
+    source_address_prefixes    = azurerm_subnet.Spoke_vnet_subnets["WebSubnet"].address_prefixes
+    destination_address_prefix = local.app_lb_private_ip
+    description                = "Web tier to internal LB frontend only"
   }
 
   security_rule {
@@ -544,15 +529,28 @@ resource "azurerm_network_security_group" "app" {
     access                       = "Allow"
     protocol                     = "Tcp"
     source_port_range            = "*"
-    destination_port_range       = "8080"
+    destination_port_ranges      = ["3000", "80"]
     source_address_prefixes      = azurerm_subnet.Spoke_vnet_subnets["WebSubnet"].address_prefixes
     destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["AppSubnet"].address_prefixes
     description                  = "Only the web tier can reach the app port"
   }
 
   security_rule {
-    name                         = "app-in-admin-bastion"
+    name                         = "Allow-LB-Probes"
     priority                     = 200
+    direction                    = "Inbound"
+    access                       = "Allow"
+    protocol                     = "Tcp"
+    source_port_range            = "*"
+    destination_port_range       = "3000"
+    source_address_prefix        = "AzureLoadBalancer"
+    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["AppSubnet"].address_prefixes
+    description                  = "Internal LB health probe"
+  }
+
+  security_rule {
+    name                         = "app-in-admin-bastion"
+    priority                     = 300
     direction                    = "Inbound"
     access                       = "Allow"
     protocol                     = "Tcp"
@@ -603,21 +601,8 @@ resource "azurerm_network_security_group" "app" {
   }
 
   security_rule {
-    name                         = "app-out-to-kv"
-    priority                     = 300
-    direction                    = "Outbound"
-    access                       = "Allow"
-    protocol                     = "Tcp"
-    source_port_range            = "*"
-    destination_port_range       = "443"
-    source_address_prefixes      = azurerm_subnet.Spoke_vnet_subnets["AppSubnet"].address_prefixes
-    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].address_prefixes
-    description                  = "App to Key Vault secret retrieval"
-  }
-
-  security_rule {
     name                         = "app-out-for-AADSSHLoginForLinux-setup"
-    priority                     = 400
+    priority                     = 300
     direction                    = "Outbound"
     access                       = "Allow"
     protocol                     = "Tcp"
@@ -690,6 +675,68 @@ resource "azurerm_network_security_group" "db" {
   }
 }
 
+
+############################################
+# PE NSG
+############################################
+resource "azurerm_network_security_group" "pe" {
+  name                = "Demo-PE-nsg"
+  location            = data.azurerm_resource_group.rg.location
+  resource_group_name = data.azurerm_resource_group.rg.name
+
+  security_rule {
+    name                         = "PE-in-from-appGW"
+    priority                     = 100
+    direction                    = "Inbound"
+    access                       = "Allow"
+    protocol                     = "Tcp"
+    source_port_range            = "*"
+    destination_port_range       = "443"
+    source_address_prefixes      = azurerm_subnet.Spoke_vnet_subnets["AppGatewaySubnet"].address_prefixes
+    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].address_prefixes
+    description                  = "App Gateway to web app and KV private endpoints (HTTPS)"
+  }
+
+  security_rule {
+    name                         = "PE-in-from-ACA"
+    priority                     = 200
+    direction                    = "Inbound"
+    access                       = "Allow"
+    protocol                     = "Tcp"
+    source_port_range            = "*"
+    destination_port_range       = "443"
+    source_address_prefixes      = data.azurerm_subnet.aca["ACA-JobSubnet"].address_prefixes
+    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].address_prefixes
+    description                  = "ACA to ACR private endpoint"
+  }
+
+  security_rule {
+    name                       = "PE-in-deny-all"
+    priority                   = 4096
+    direction                  = "Inbound"
+    access                     = "Deny"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+    description                = "Explicit deny all inbound"
+  }
+
+  security_rule {
+    name                       = "PE-out-deny-all"
+    priority                   = 4096
+    direction                  = "Outbound"
+    access                     = "Deny"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+    description                = "Explicit deny all outbound"
+  }
+}
+
 ############################################
 # Subnet associations
 ############################################
@@ -711,6 +758,11 @@ resource "azurerm_subnet_network_security_group_association" "app" {
 resource "azurerm_subnet_network_security_group_association" "db" {
   subnet_id                 = azurerm_subnet.Spoke_vnet_subnets["DataSubnet"].id
   network_security_group_id = azurerm_network_security_group.db.id
+}
+
+resource "azurerm_subnet_network_security_group_association" "pe" {
+  subnet_id                 = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].id
+  network_security_group_id = azurerm_network_security_group.pe.id
 }
 
 
@@ -754,7 +806,7 @@ resource "azurerm_application_gateway" "appgw" {
   probe {
     name                                      = "demo-probe"
     protocol                                  = "Https"
-    path                                      = "/"
+    path                                      = "/healthz"
     interval                                  = 30
     timeout                                   = 30
     unhealthy_threshold                       = 3
@@ -769,7 +821,6 @@ resource "azurerm_application_gateway" "appgw" {
     name                                = "backendHttpSettings"
     cookie_based_affinity               = "Disabled"
     port                                = 443
-    path                                = "/"
     protocol                            = "Https"
     request_timeout                     = 30
     pick_host_name_from_backend_address = true
@@ -843,6 +894,20 @@ resource "azurerm_application_gateway" "appgw" {
   depends_on = [azurerm_role_assignment.appgw_kv_reader]
 }
 
+resource "azurerm_monitor_diagnostic_setting" "appgw" {
+  name                       = "appgw-to-law"
+  target_resource_id         = azurerm_application_gateway.appgw.id
+  log_analytics_workspace_id = data.azurerm_log_analytics_workspace.law.id
+
+  enabled_log {
+    category = "ApplicationGatewayAccessLog"
+  }
+
+  enabled_log {
+    category = "ApplicationGatewayFirewallLog"
+  }
+}
+
 # 1. Create the WAF Policy
 resource "azurerm_web_application_firewall_policy" "waf_policy" {
   name                = "example-waf-policy"
@@ -882,14 +947,17 @@ resource "azurerm_linux_web_app" "webapp" {
     minimum_tls_version               = "1.2"
     ftps_state                        = "Disabled"
     http2_enabled                     = true
-    health_check_path                 = "/health"
+    health_check_path                 = "/healthz"
     health_check_eviction_time_in_min = 5
     vnet_route_all_enabled            = true
 
     application_stack {
       node_version = "24-lts"
     }
+    
+    app_command_line  = "sh /home/site/wwwroot/startup.sh"
   }
+
 
   https_only                                     = true
   public_network_access_enabled                  = false
@@ -901,9 +969,10 @@ resource "azurerm_linux_web_app" "webapp" {
     type = "SystemAssigned"
   }
   app_settings = {
-    "SCM_DO_BUILD_DURING_DEPLOYMENT"             = "true"
+    "SCM_DO_BUILD_DURING_DEPLOYMENT"             = "false"
     "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
     "APPLICATIONINSIGHTS_CONNECTION_STRING"      = azurerm_application_insights.appi.connection_string
+    "BACKEND_API_URL"                            = "http://${local.app_lb_private_ip}"
   }
 
   logs {
@@ -917,12 +986,46 @@ resource "azurerm_linux_web_app" "webapp" {
       }
     }
   }
+}
 
-  lifecycle {
-    ignore_changes = [
-      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
-    ]
+resource "azurerm_lb" "lb" {
+  name                = "my-lb"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  sku                 = "Standard"
+
+  frontend_ip_configuration {
+    name                          = "internalIPfrontend"
+    subnet_id                     = azurerm_subnet.Spoke_vnet_subnets["AppSubnet"].id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = local.app_lb_private_ip
   }
+}
+
+resource "azurerm_lb_backend_address_pool" "pool" {
+  name            = "vmss-backend-pool"
+  loadbalancer_id = azurerm_lb.lb.id
+}
+
+resource "azurerm_lb_probe" "http" {
+  name                = "http-probe"
+  loadbalancer_id     = azurerm_lb.lb.id
+  protocol            = "Http"
+  port                = 3000
+  request_path        = "/api/health"
+  interval_in_seconds = 10
+  number_of_probes    = 3
+}
+
+resource "azurerm_lb_rule" "http" {
+  name                           = "http-rule"
+  loadbalancer_id                = azurerm_lb.lb.id
+  protocol                       = "Tcp"
+  frontend_port                  = 80
+  backend_port                   = 3000
+  frontend_ip_configuration_name = "internalIPfrontend"
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.pool.id]
+  probe_id                       = azurerm_lb_probe.http.id
 }
 
 resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
@@ -932,10 +1035,18 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
   sku                 = "Standard_B2s"
   instances           = 1
   admin_username      = "adminuser"
+  upgrade_mode        = "Rolling"
+  health_probe_id     = azurerm_lb_probe.http.id
 
   admin_ssh_key {
     username   = "adminuser"
     public_key = var.vmss_public_key
+  }
+  rolling_upgrade_policy {
+    max_batch_instance_percent              = 20
+    max_unhealthy_instance_percent          = 20
+    max_unhealthy_upgraded_instance_percent = 5
+    pause_time_between_batches              = "PT1M"
   }
 
   identity {
@@ -972,20 +1083,16 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
       name      = "internal"
       primary   = true
       subnet_id = azurerm_subnet.Spoke_vnet_subnets["AppSubnet"].id
-
-      application_gateway_backend_address_pool_ids = [
-        tolist(azurerm_application_gateway.appgw.backend_address_pool)[0].id
-      ]
+      load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.pool.id]
     }
   }
 
-  user_data = base64encode(<<-EOF
-      #!/bin/bash
-      sudo apt update
-      sudo apt install -y nginx
-      sudo systemctl start nginx
-    EOF
-  )
+  # Read and Base64-encode your cloud-init.yml file
+  custom_data = filebase64("${path.module}/cloud-init.yml")
+
+  depends_on = [
+    azurerm_lb_rule.http
+  ]
 }
 
 resource "azurerm_monitor_autoscale_setting" "vmss_autoscale" {
@@ -1014,11 +1121,6 @@ resource "azurerm_monitor_autoscale_setting" "vmss_autoscale" {
         operator           = "GreaterThan"
         threshold          = 75
         metric_namespace   = "microsoft.compute/virtualmachinescalesets"
-        dimensions {
-          name     = "AppName"
-          operator = "Equals"
-          values   = ["App1"]
-        }
       }
 
       scale_action {

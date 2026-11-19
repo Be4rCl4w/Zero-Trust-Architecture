@@ -1,0 +1,121 @@
+name: Deploy API Tier to VMSS
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'api/**'
+      - '.github/workflows/deploy-api.yaml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  test:
+    name: Test
+    runs-on: [self-hosted, linux]
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: 'api/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  # ------------------------------------------------------------------
+  # 2. App/API tier -> VMSS instances (rolling update via run-command)
+  # ------------------------------------------------------------------
+  deploy-api:
+    name: Deploy API Tier
+    needs: test
+    runs-on: [self-hosted, linux]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # run-command goes through the Azure control plane, so the VMSS needs no inbound
+      # access from the runner. Each instance pulls the code, writes .env, restarts Node,
+      # and checks its own /api/health before the loop moves to the next instance.
+      - name: Rolling update on all VMSS instances
+        env:
+          RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          DB_SERVER: ${{ secrets.DB_SERVER }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+        run: |
+          INSTANCE_IDS=$(az vmss list-instances \
+            --resource-group "$RG" \
+            --name "demo-vmss" \
+            --query "[].instanceId" -o tsv)
+
+          for ID in $INSTANCE_IDS; do
+            echo "Deploying to VMSS instance: $ID"
+            az vmss run-command create \
+              --resource-group "$RG" \
+              --vmss-name "demo-vmss" \
+              --name unn-sug-deploy \
+              --instance-id "$ID" \
+              --script "set -e; \
+                cd /opt/unn-sug-api; \
+                git fetch origin main; \
+                git reset --hard origin/main; \
+                cd /opt/unn-sug-api/api; \
+                printf 'PORT=3000\nDB_SERVER=%s\nDB_NAME=%s\n' '$DB_SERVER' '$DB_NAME' > .env; \
+                npm ci --omit=dev; \
+                pm2 restart unn-sug-api --update-env || pm2 start server.js --name unn-sug-api; \
+                pm2 save; \
+                sleep 3; \
+                curl -fsS --noproxy '*' http://127.0.0.1:3000/api/health"
+          done
+
+      - name: Fetch App Gateway public certificate
+        run: |
+          az keyvault certificate download \
+            --vault-name "${{ secrets.KEY_VAULT_NAME }}" \
+            --name "appgw-tls-cert" \
+            --file "$RUNNER_TEMP/appgw.pem" \
+            --encoding PEM    
+
+      # Don't call the internal LB from the runner: the app NSG only lets the web tier
+      # reach port 3000 (by design). Test the real user path instead:
+      # App Gateway -> web tier -> proxy -> internal LB -> VMSS.
+      - name: End-to-end health check via App Gateway
+        env:
+          APP_URL: ${{ secrets.APP_URL }}   
+        run: |
+          for i in {1..12}; do
+            if curl -fsS --cacert "$RUNNER_TEMP/appgw.pem" --max-time 10 "$APP_URL/api/health" | grep -q '"Healthy"'; then
+              echo "API tier healthy end-to-end via $APP_URL"
+              exit 0
+            fi
+            echo "Waiting for API tier... ($i/12)"
+            sleep 10
+          done
+
+          echo "API tier failed the end-to-end health check. Verbose output:" >&2
+          curl -v --cacert "$RUNNER_TEMP/appgw.pem" --max-time 10 "$APP_URL/api/health" || true
+          exit 1
