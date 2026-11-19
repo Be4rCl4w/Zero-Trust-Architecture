@@ -1,0 +1,36 @@
+#cloud-config
+package_update: true
+package_upgrade: false
+
+packages:
+  - git
+  - curl
+  - build-essential
+
+runcmd:
+  # 1. Safely wait for any background apt/dpkg processes to finish before manual installation
+  - |
+    while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
+      echo "Waiting for other software managers to finish..."
+      sleep 5
+    done
+
+  # 2. Install Node.js 24 from Nodesource
+  - curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+  - apt-get install -y nodejs
+
+  # 3. Install PM2 process manager (survives reboots)
+  - npm install -g pm2
+  - pm2 startup systemd -u root --hp /root
+
+  # 4. Clone App code & install dependencies inside the api/ subdirectory
+  - mkdir -p /opt/unn-sug-api
+  - git clone https://github.com/Be4rCl4w/sug-app.git /opt/unn-sug-api
+  - cd /opt/unn-sug-api/api && npm ci --omit=dev
+
+  # 5. Write App configuration environment file directly into the api/ folder
+  - printf 'DB_SERVER=demosqlserver0978432.database.windows.net\nDB_NAME=demo_sql_database7893\nPORT=3000\n' > /opt/unn-sug-api/api/.env
+
+  # 6. Start under PM2 from within the api/ directory
+  - cd /opt/unn-sug-api/api && pm2 start server.js --name unn-sug-api
+  - pm2 save
