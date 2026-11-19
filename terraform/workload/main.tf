@@ -419,7 +419,7 @@ resource "azurerm_network_security_group" "appgw" {
     source_port_range            = "*"
     destination_port_range       = "80"
     source_address_prefixes      = azurerm_subnet.Hub_vnet_subnets["AppGatewaySubnet"].address_prefixes
-    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["PrivateSubnet"].address_prefixes
+    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].address_prefixes
     description                  = "App Gateway to web tier on port 80"
   }
 
