@@ -100,10 +100,15 @@ locals {
       delegate       = false
       pe_policies    = "Enabled"
     }
-    "PrivateEndpointSubnet" = {
+    "InfraPrivateEndpointsSubnet" = {
       address_prefix = "10.20.4.0/24"
       delegate       = false
       pe_policies    = "Enabled" # makes NSG rules apply to private endpoints
+    }
+    "WebEndpointSubnet" = {
+      address_prefix = "10.20.5.0/24"
+      delegate       = false
+      pe_policies    = "Enabled"
     }
   }
 
@@ -275,11 +280,11 @@ locals {
     }
     kv = {
       name    = "privatelink.vaultcore.azure.net"
-      vnet_id = data.azurerm_virtual_network.Hub_vnet.id
+      vnet_id = data.azurerm_virtual_network.Spoke_vnet.id
     }
     webapp = {
       name    = "privatelink.azurewebsites.net"
-      vnet_id = data.azurerm_virtual_network.Hub_vnet.id
+      vnet_id = data.azurerm_virtual_network.Spoke_vnet.id
     }
     acr = {
       name    = "privatelink.azurecr.io"
@@ -313,19 +318,19 @@ locals {
       dns_key     = "kv"
       resource_id = data.azurerm_key_vault.kv.id
       subresource = "vault"
-      subnet_id   = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].id
+      subnet_id   = azurerm_subnet.Spoke_vnet_subnets["WebEndpointSubnet"].id
     }
     webapp = {
       dns_key     = "webapp"
       resource_id = azurerm_linux_web_app.webapp.id
       subresource = "sites"
-      subnet_id   = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].id
+      subnet_id   = azurerm_subnet.Spoke_vnet_subnets["WebEndpointSubnet"].id
     }
     acr = {
       dns_key     = "acr"
       resource_id = data.azurerm_container_registry.acr.id
       subresource = "registry"
-      subnet_id   = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].id
+      subnet_id   = data.azurerm_subnet.aca.id
     }
   }
 }
@@ -677,10 +682,58 @@ resource "azurerm_network_security_group" "db" {
 
 
 ############################################
-# PE NSG
+# Infra-PE NSG
 ############################################
 resource "azurerm_network_security_group" "pe" {
-  name                = "Demo-PE-nsg"
+  name                = "Demo-Infra-PE-nsg"
+  location            = data.azurerm_resource_group.rg.location
+  resource_group_name = data.azurerm_resource_group.rg.name
+
+  security_rule {
+    name                         = "PE-in-from-ACA"
+    priority                     = 100
+    direction                    = "Inbound"
+    access                       = "Allow"
+    protocol                     = "Tcp"
+    source_port_range            = "*"
+    destination_port_range       = "443"
+    source_address_prefixes      = data.azurerm_subnet.aca.address_prefixes
+    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["InfraPrivateEndpointsSubnet"].address_prefixes
+    description                  = "ACA to ACR private endpoint"
+  }
+
+  security_rule {
+    name                       = "PE-in-deny-all"
+    priority                   = 4096
+    direction                  = "Inbound"
+    access                     = "Deny"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+    description                = "Explicit deny all inbound"
+  }
+
+  security_rule {
+    name                       = "PE-out-deny-all"
+    priority                   = 4096
+    direction                  = "Outbound"
+    access                     = "Deny"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+    description                = "Explicit deny all outbound"
+  }
+}
+
+############################################
+# Web-PE NSG
+############################################
+resource "azurerm_network_security_group" "web-pe" {
+  name                = "Demo-Web-PE-nsg"
   location            = data.azurerm_resource_group.rg.location
   resource_group_name = data.azurerm_resource_group.rg.name
 
@@ -692,11 +745,10 @@ resource "azurerm_network_security_group" "pe" {
     protocol                     = "Tcp"
     source_port_range            = "*"
     destination_port_range       = "443"
-    source_address_prefixes      = azurerm_subnet.Spoke_vnet_subnets["AppGatewaySubnet"].address_prefixes
-    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].address_prefixes
-    description                  = "App Gateway to web app and KV private endpoints (HTTPS)"
+    source_address_prefixes      = azurerm_subnet.Hub_vnet_subnets["AppGatewaySubnet"].address_prefixes
+    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["WebEndpointSubnet"].address_prefixes
+    description                  = "App Gateway to web app and key vault endpoints (HTTPS)"
   }
-
   security_rule {
     name                         = "PE-in-from-ACA"
     priority                     = 200
@@ -706,8 +758,8 @@ resource "azurerm_network_security_group" "pe" {
     source_port_range            = "*"
     destination_port_range       = "443"
     source_address_prefixes      = data.azurerm_subnet.aca.address_prefixes
-    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].address_prefixes
-    description                  = "ACA to ACR private endpoint"
+    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["WebEndpointSubnet"].address_prefixes
+    description                  = "ACA to web app and key vault endpoints (HTTPS)"
   }
 
   security_rule {
@@ -761,10 +813,14 @@ resource "azurerm_subnet_network_security_group_association" "db" {
 }
 
 resource "azurerm_subnet_network_security_group_association" "pe" {
-  subnet_id                 = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].id
+  subnet_id                 = azurerm_subnet.Hub_vnet_subnets["InfraPrivateEndpointsSubnet"].id
   network_security_group_id = azurerm_network_security_group.pe.id
 }
 
+resource "azurerm_subnet_network_security_group_association" "web-pe" {
+  subnet_id                 = azurerm_subnet.Spoke_vnet_subnets["WebEndpointSubnet"].id
+  network_security_group_id = azurerm_network_security_group.web-pe.id
+}
 
 resource "azurerm_application_gateway" "appgw" {
   name                = "example-appgw"
