@@ -273,24 +273,40 @@ resource "azurerm_subnet_route_table_association" "route-ghr" {
 #}
 
 locals {
+  vnets = {
+    hub   = data.azurerm_virtual_network.Hub_vnet.id
+    spoke = data.azurerm_virtual_network.Spoke_vnet.id
+  }
+
   dns_zones = {
     sql = {
-      name    = "privatelink.database.windows.net"
-      vnet_id = data.azurerm_virtual_network.Spoke_vnet.id   # <-- different VNet for SQL
+      name  = "privatelink.database.windows.net"
+      vnets = ["spoke", "hub"]   # VMSS (spoke) + runner running schema migrations (hub)
     }
     kv = {
-      name    = "privatelink.vaultcore.azure.net"
-      vnet_id = data.azurerm_virtual_network.Spoke_vnet.id
+      name  = "privatelink.vaultcore.azure.net"
+      vnets = ["spoke", "hub"]   # hub: runner/gateway reaching the vault by name
     }
     webapp = {
-      name    = "privatelink.azurewebsites.net"
-      vnet_id = data.azurerm_virtual_network.Spoke_vnet.id
+      name  = "privatelink.azurewebsites.net"
+      vnets = ["hub"]            # App Gateway + runner (both in the hub)
     }
     acr = {
-      name    = "privatelink.azurecr.io"
-      vnet_id = data.azurerm_virtual_network.Spoke_vnet.id
+      name  = "privatelink.azurecr.io"
+      vnets = ["spoke", "hub"]
     }
   }
+
+  # One entry per zone/VNet pair
+  dns_links = merge([
+    for zone_key, zone in local.dns_zones : {
+      for vnet_key in zone.vnets :
+      "${zone_key}-${vnet_key}" => {
+        zone_key = zone_key
+        vnet_id  = local.vnets[vnet_key]
+      }
+    }
+  ]...)
 }
 
 resource "azurerm_private_dns_zone" "private_dns_zone" {
@@ -300,16 +316,10 @@ resource "azurerm_private_dns_zone" "private_dns_zone" {
 }
 
 resource "azurerm_private_dns_zone_virtual_network_link" "private_dns_link" {
-  for_each              = local.dns_zones
+  for_each              = local.dns_links
   name                  = "demo_${each.key}_link"
-  private_dns_zone_id = azurerm_private_dns_zone.private_dns_zone[each.key].id
+  private_dns_zone_id   = azurerm_private_dns_zone.private_dns_zone[each.value.zone_key].id
   virtual_network_id    = each.value.vnet_id
-}
-
-resource "azurerm_private_dns_zone_virtual_network_link" "webapp_runner" {
-  name                = "webapp-runner-link"
-  private_dns_zone_id = azurerm_private_dns_zone.webapp.id
-  virtual_network_id  = data.azurerm_virtual_network.Spoke_vnet.id
 }
 
 locals {

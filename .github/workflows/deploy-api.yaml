@@ -23,7 +23,6 @@ jobs:
   test:
     name: Test
     runs-on: [self-hosted, linux]
-    environment: production
     defaults:
       run:
         working-directory: api
@@ -51,8 +50,6 @@ jobs:
     runs-on: [self-hosted, linux]
     environment: production
     steps:
-      - uses: actions/checkout@v4
-
       - name: Azure login (OIDC)
         uses: azure/login@v2
         with:
@@ -80,11 +77,12 @@ jobs:
               --resource-group "$RG" \
               --vmss-name "demo-vmss" \
               --name unn-sug-deploy \
+              --treat-failure-as-deployment-failure true \
               --instance-id "$ID" \
               --script "set -e; \
                 cd /opt/unn-sug-api; \
-                git fetch origin main; \
-                git reset --hard origin/main; \
+                git fetch origin ${{ github.sha }}; \
+                git reset --hard ${{ github.sha }}; \
                 cd /opt/unn-sug-api/api; \
                 printf 'PORT=3000\nDB_SERVER=%s\nDB_NAME=%s\n' '$DB_SERVER' '$DB_NAME' > .env; \
                 npm ci --omit=dev; \

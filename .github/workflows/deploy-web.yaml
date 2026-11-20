@@ -23,7 +23,6 @@ jobs:
   test:
     name: Test
     runs-on: [self-hosted, linux]
-    environment: production
     defaults:
       run:
         working-directory: web
@@ -130,7 +129,7 @@ jobs:
         run: |
           az keyvault certificate download \
             --vault-name "${{ secrets.KEY_VAULT_NAME }}" \
-            --name appgw-listener-cert \
+            --name "appgw-tls-cert"  \
             --file "$RUNNER_TEMP/appgw.pem" \
             --encoding PEM    
 
