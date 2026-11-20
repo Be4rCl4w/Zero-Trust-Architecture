@@ -306,6 +306,12 @@ resource "azurerm_private_dns_zone_virtual_network_link" "private_dns_link" {
   virtual_network_id    = each.value.vnet_id
 }
 
+resource "azurerm_private_dns_zone_virtual_network_link" "webapp_runner" {
+  name                = "webapp-runner-link"
+  private_dns_zone_id = azurerm_private_dns_zone.webapp.id
+  virtual_network_id  = data.azurerm_virtual_network.Hub_vnet.id
+}
+
 locals {
   endpoints_config = {
     sql = {
