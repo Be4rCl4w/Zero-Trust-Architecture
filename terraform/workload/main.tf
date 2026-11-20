@@ -1148,8 +1148,8 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
 
   depends_on = [
     azurerm_lb_rule.http,
-    azurerm_firewall.firewall.id,
-    azurerm_firewall_application_rule_collection.fwrc
+    azurerm_firewall.firewall,
+    azurerm_firewall_application_rule_collection
   ]
 }
 
