@@ -288,7 +288,7 @@ locals {
     }
     acr = {
       name    = "privatelink.azurecr.io"
-      vnet_id = data.azurerm_virtual_network.Hub_vnet.id
+      vnet_id = data.azurerm_virtual_network.Spoke_vnet.id
     }
   }
 }
@@ -330,7 +330,7 @@ locals {
       dns_key     = "acr"
       resource_id = data.azurerm_container_registry.acr.id
       subresource = "registry"
-      subnet_id   = data.azurerm_subnet.aca.id
+      subnet_id   = azurerm_subnet.Spoke_vnet_subnets["InfraEndpointsSubnet"].id
     }
   }
 }
@@ -424,7 +424,7 @@ resource "azurerm_network_security_group" "appgw" {
     source_port_range            = "*"
     destination_port_range       = "80"
     source_address_prefixes      = azurerm_subnet.Hub_vnet_subnets["AppGatewaySubnet"].address_prefixes
-    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].address_prefixes
+    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["WebEndpointSubnet"].address_prefixes
     description                  = "App Gateway to web tier on port 80"
   }
 
@@ -451,7 +451,7 @@ resource "azurerm_network_security_group" "appgw" {
     source_port_range            = "*"
     destination_port_range       = "443"
     source_address_prefixes      = azurerm_subnet.Hub_vnet_subnets["AppGatewaySubnet"].address_prefixes
-    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["PrivateEndpointSubnet"].address_prefixes
+    destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["WebEndpointSubnet"].address_prefixes
     description                  = "App Gateway to Key Vault"
   }
 
