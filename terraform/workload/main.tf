@@ -568,7 +568,7 @@ resource "azurerm_network_security_group" "app" {
 
   security_rule {
     name                         = "app-in-github-runner"
-    priority                     = 300
+    priority                     = 400
     direction                    = "Inbound"
     access                       = "Allow"
     protocol                     = "Tcp"
