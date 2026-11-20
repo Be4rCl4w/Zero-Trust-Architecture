@@ -23,6 +23,7 @@ jobs:
   test:
     name: Test
     runs-on: [self-hosted, linux]
+    environment: production
     defaults:
       run:
         working-directory: web
@@ -48,6 +49,7 @@ jobs:
     name: Deploy Web Tier
     needs: test
     runs-on: [self-hosted, linux]
+    environment: production
     env:
       RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
       APP: ${{ secrets.AZURE_WEBAPP_NAME }}

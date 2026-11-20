@@ -23,6 +23,7 @@ jobs:
   test:
     name: Test
     runs-on: [self-hosted, linux]
+    environment: production
     defaults:
       run:
         working-directory: api
@@ -48,6 +49,7 @@ jobs:
     name: Deploy API Tier
     needs: test
     runs-on: [self-hosted, linux]
+    environment: production
     steps:
       - uses: actions/checkout@v4
 
