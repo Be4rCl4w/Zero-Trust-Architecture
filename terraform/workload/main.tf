@@ -330,7 +330,7 @@ locals {
       dns_key     = "acr"
       resource_id = data.azurerm_container_registry.acr.id
       subresource = "registry"
-      subnet_id   = azurerm_subnet.Spoke_vnet_subnets["InfraEndpointsSubnet"].id
+      subnet_id   = azurerm_subnet.Spoke_vnet_subnets["InfraPrivateEndpointsSubnet"].id
     }
   }
 }
@@ -813,7 +813,7 @@ resource "azurerm_subnet_network_security_group_association" "db" {
 }
 
 resource "azurerm_subnet_network_security_group_association" "pe" {
-  subnet_id                 = azurerm_subnet.Hub_vnet_subnets["InfraPrivateEndpointsSubnet"].id
+  subnet_id                 = azurerm_subnet.Spoke_vnet_subnets["InfraPrivateEndpointsSubnet"].id
   network_security_group_id = azurerm_network_security_group.pe.id
 }
 
