@@ -24,11 +24,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_version: 1.14.6
-
       - name: Azure login (OIDC)
         uses: azure/login@v2
         with:

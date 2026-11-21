@@ -2,8 +2,8 @@ FROM ubuntu:22.04
 
 # Check https://github.com/actions/runner/releases for the latest version
 ARG RUNNER_VERSION=2.335.0
+ARG TERRAFORM_VERSION=1.14.6
 ENV DEBIAN_FRONTEND=noninteractive
-
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
@@ -19,6 +19,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
 && apt-get install -y nodejs \
 && curl -sL https://aka.ms/InstallAzureCLIDeb | bash \
+&& curl -fsSL "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip" -o /tmp/terraform.zip \
+&& unzip /tmp/terraform.zip -d /usr/local/bin \
+&& rm -f /tmp/terraform.zip \
 && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m runner
