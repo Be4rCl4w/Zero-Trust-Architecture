@@ -39,7 +39,7 @@ variable "github_repo" {
 
 variable "runner_labels" { 
   type = string
-  default = "self-hosted, aca" 
+  default = "self-hosted, aca, linux" 
 }
 variable "max_runners"   { 
   type = number  

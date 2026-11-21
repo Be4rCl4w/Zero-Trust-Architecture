@@ -199,7 +199,7 @@ resource "azurerm_firewall_application_rule_collection" "fwrc" {
 
     source_addresses = [
       "10.20.0.0/16", 
-      "10.0.3.0/24"
+      "10.0.3.0/26"
     ]
 
      target_fqdns = [

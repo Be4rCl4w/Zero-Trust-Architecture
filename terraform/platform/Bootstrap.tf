@@ -462,7 +462,7 @@ resource "azurerm_container_app_job" "runner" {
     scale {
       min_executions              = 0
       max_executions              = var.max_runners
-      polling_interval_in_seconds = 30
+      polling_interval_in_seconds = 10
 
       rules {
         name             = "github-runner"
