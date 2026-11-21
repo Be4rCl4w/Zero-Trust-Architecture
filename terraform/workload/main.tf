@@ -175,7 +175,7 @@ resource "azurerm_firewall" "firewall" {
   location            = data.azurerm_resource_group.rg.location
   resource_group_name = data.azurerm_resource_group.rg.name
   sku_name            = "AZFW_VNet"
-  sku_tier            = "Basic"
+  sku_tier            = "Standard"
 
   ip_configuration {
     name                 = "FW_configuration"
@@ -183,8 +183,8 @@ resource "azurerm_firewall" "firewall" {
     public_ip_address_id = azurerm_public_ip.public_ip["AzureFirewall"].id
   }
 
-  dns_proxy_enabled = false
-  threat_intel_mode = "Alert"
+  dns_proxy_enabled = true
+  threat_intel_mode = "Deny"
 }
 
 resource "azurerm_firewall_application_rule_collection" "fwrc" {
