@@ -46,4 +46,4 @@ jobs:
             --name "caj-ghrunner" \
             --resource-group "Demo-RG1" \
             --container-name "runner" \
-            --image "myghrunneracr123.azurecr.io/gh-runner:${{ steps.get_tag.outputs.tag }}
+            --image "myghrunneracr123.azurecr.io/gh-runner:${{ steps.get_tag.outputs.tag }}"
