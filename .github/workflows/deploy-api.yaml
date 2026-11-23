@@ -73,23 +73,31 @@ jobs:
 
           for ID in $INSTANCE_IDS; do
             echo "Deploying to VMSS instance: $ID"
-            az vmss run-command create \
+
+            MESSAGE=$(az vmss run-command invoke \
               --resource-group "$RG" \
-              --vmss-name "demo-vmss" \
-              --name unn-sug-deploy \
-              --treat-failure-as-deployment-failure true \
+              --name "demo-vmss" \
               --instance-id "$ID" \
-              --script "set -e; \
-                cd /opt/unn-sug-api; \
-                git fetch origin ${{ github.sha }}; \
-                git reset --hard ${{ github.sha }}; \
-                cd /opt/unn-sug-api/api; \
-                printf 'PORT=3000\nDB_SERVER=%s\nDB_NAME=%s\n' '$DB_SERVER' '$DB_NAME' > .env; \
-                npm ci --omit=dev; \
-                pm2 restart unn-sug-api --update-env || pm2 start server.js --name unn-sug-api; \
-                pm2 save; \
-                sleep 3; \
-                curl -fsS --noproxy '*' http://127.0.0.1:3000/api/health"
+              --command-id RunShellScript \
+              --query "value[0].message" -o tsv \
+              --scripts "set -e
+                cd /opt/unn-sug-api
+                git fetch origin ${{ github.sha }}
+                git reset --hard ${{ github.sha }}
+                cd /opt/unn-sug-api/api
+                printf 'PORT=3000\nDB_SERVER=%s\nDB_NAME=%s\n' '$DB_SERVER' '$DB_NAME' > .env
+                npm ci --omit=dev
+                pm2 restart unn-sug-api --update-env || pm2 start server.js --name unn-sug-api
+                pm2 save
+                sleep 3
+                echo 'DEPLOY_SUCCESS'")
+
+            echo "$MESSAGE"
+
+            if [[ "$MESSAGE" != *"DEPLOY_SUCCESS"* ]]; then
+              echo "Error: Deployment failed on instance $ID" >&2
+              exit 1
+            fi
           done
 
       - name: Fetch App Gateway public certificate

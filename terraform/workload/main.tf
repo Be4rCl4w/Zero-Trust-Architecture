@@ -204,8 +204,8 @@ resource "azurerm_firewall_application_rule_collection" "fwrc" {
 
      target_fqdns = [
       "github.com", "*.github.com", "*.actions.githubusercontent.com",
-      "*.githubusercontent.com", "*.blob.core.windows.net",
-      "*.azurecr.io", "*.vault.azure.net", "login.microsoftonline.com",
+      "*.githubusercontent.com", "*.blob.core.windows.net", "*.aadcdn.msftauth.net",
+      "*.azurecr.io", "*.vault.azure.net", "login.microsoftonline.com", "*.aadcdn.msauth.net",
       "*.azure.com", "*.microsoft.com", "mcr.microsoft.com", "*.data.mcr.microsoft.com",
       "releases.hashicorp.com", "registry.terraform.io", "*.ubuntu.com"
     ]
@@ -250,11 +250,19 @@ resource "azurerm_subnet_route_table_association" "route" {
   for_each       = local.Spoke_subnets
   subnet_id      = azurerm_subnet.Spoke_vnet_subnets[each.key].id
   route_table_id = azurerm_route_table.rt.id
+
+  depends_on = [
+    azurerm_route_table.rt
+  ]
 }
 
 resource "azurerm_subnet_route_table_association" "route-ghr" {
   subnet_id      = data.azurerm_subnet.aca.id
   route_table_id = azurerm_route_table.rt.id
+
+  depends_on = [
+    azurerm_route_table.rt
+  ]
 }
 
 
@@ -963,7 +971,10 @@ resource "azurerm_application_gateway" "appgw" {
 
   firewall_policy_id = azurerm_web_application_firewall_policy.waf_policy.id
 
-  depends_on = [azurerm_role_assignment.appgw_kv_reader]
+  depends_on = [
+    azurerm_role_assignment.appgw_kv_reader,
+    azurerm_key_vault_certificate.tls_cert
+  ]
 }
 
 resource "azurerm_monitor_diagnostic_setting" "appgw" {
@@ -1165,7 +1176,9 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
   depends_on = [
     azurerm_lb_rule.http,
     azurerm_firewall.firewall,
-    azurerm_firewall_application_rule_collection.fwrc
+    azurerm_firewall_application_rule_collection.fwrc,
+    azurerm_subnet_route_table_association.route,
+    azurerm_subnet_route_table_association.route-ghr
   ]
 }
 
@@ -1346,6 +1359,9 @@ resource "azurerm_key_vault_certificate" "tls_cert" {
       }
     }
   }
+  depends_on = [
+    azurerm_role_assignment.appgw_kv_reader
+  ]
 }
 
 

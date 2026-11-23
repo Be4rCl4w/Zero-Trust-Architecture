@@ -62,6 +62,7 @@ resource "azurerm_role_definition" "enterprise_iac_role" {
       "Microsoft.Cache/*",
       "Microsoft.DBforPostgreSQL/*",
       "Microsoft.DBforMySQL/*",
+      "Microsoft.App/jobs/write",
       "Microsoft.Authorization/policyAssignments/*",
       "Microsoft.Authorization/policyDefinitions/*",
       "Microsoft.Authorization/policyExemptions/*",
@@ -155,14 +156,6 @@ resource "azurerm_role_assignment" "data_contributor" {
   scope                = azurerm_resource_group.rg["rg-tfstate"].id
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = azuread_service_principal.github_deploy.object_id
-}
-
-resource "azurerm_role_assignment" "user_contributor" {
-  scope                = azurerm_key_vault.kv.id
-  role_definition_name = "User Access Administrator"
-  principal_id         = azuread_service_principal.github_deploy.object_id
-
-  depends_on = [azurerm_key_vault.kv]
 }
 
 resource "azurerm_role_assignment" "deployer_kv_officer" {
@@ -493,8 +486,8 @@ resource "azurerm_container_app_job" "runner" {
     container {
       name   = "runner"
       image  = "${azurerm_container_registry.acr.login_server}/gh-runner:v1.1.0"
-      cpu    = "0.25"    
-      memory = "0.5Gi"
+      cpu    = "0.5"    
+      memory = "1Gi"
 
       env {
         name  = "GITHUB_OWNER"
