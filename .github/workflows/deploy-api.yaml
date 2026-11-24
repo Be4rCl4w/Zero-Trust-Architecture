@@ -82,7 +82,7 @@ jobs:
               --query "value[0].message" -o tsv \
               --scripts "set -e
                 cd /opt/unn-sug-api
-                git fetch origin ${{ github.sha }}
+                git fetch origin ${{ github.ref_name }}
                 git reset --hard ${{ github.sha }}
                 cd /opt/unn-sug-api/api
                 printf 'PORT=3000\nDB_SERVER=%s\nDB_NAME=%s\n' '$DB_SERVER' '$DB_NAME' > .env
@@ -90,6 +90,7 @@ jobs:
                 pm2 restart unn-sug-api --update-env || pm2 start server.js --name unn-sug-api
                 pm2 save
                 sleep 3
+                curl -fsS http://localhost:3000/api/health
                 echo 'DEPLOY_SUCCESS'")
 
             echo "$MESSAGE"
