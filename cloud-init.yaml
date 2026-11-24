@@ -25,7 +25,7 @@ runcmd:
 
   # 4. Clone App code & install dependencies inside the api/ subdirectory
   - mkdir -p /opt/unn-sug-api
-  - git clone https://github.com/Be4rCl4w/sug-app.git /opt/unn-sug-api
+  - git clone https://github.com/Be4rCl4w/Zero-Trust-Architecture.git /opt/unn-sug-api
   - cd /opt/unn-sug-api/api && npm ci --omit=dev
 
   # 5. Write App configuration environment file directly into the api/ folder
