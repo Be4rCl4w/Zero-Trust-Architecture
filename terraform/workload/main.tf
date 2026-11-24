@@ -221,12 +221,22 @@ resource "azurerm_firewall_policy_rule_collection_group" "main" {
         "*.azurecr.io", "*.vault.azure.net", "login.microsoftonline.com", "*.aadcdn.msauth.net",
         "*.azure.com", "*.microsoft.com", "mcr.microsoft.com", "*.data.mcr.microsoft.com",
         "releases.hashicorp.com", "registry.terraform.io", "*.ubuntu.com", "*.nodesource.com",
-        "registry.npmjs.org"
+        "registry.npmjs.org", "nodejs.org"
       ]
 
       protocols {
         type = "Https"
         port = 443
+      }
+    }
+    rule {
+      name               = "ubuntu_apt_http"
+      source_addresses   = ["10.20.0.0/16"]
+      destination_fqdns   = ["azure.archive.ubuntu.com", "archive.ubuntu.com", "security.ubuntu.com"]
+
+      protocols {
+        port = "80"
+        type = "Http"
       }
     }
   }

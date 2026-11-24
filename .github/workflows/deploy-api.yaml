@@ -81,6 +81,7 @@ jobs:
               --command-id RunShellScript \
               --query "value[0].message" -o tsv \
               --scripts "set -e
+                export HOME=/root
                 cd /opt/unn-sug-api
                 git fetch origin ${{ github.ref_name }}
                 git reset --hard ${{ github.sha }}
