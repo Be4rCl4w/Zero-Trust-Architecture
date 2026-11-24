@@ -9,5 +9,6 @@ terraform.tfstate.backup
 runner-token
 .terraform/
 appgw.tf
+README.md
 node_modules/
 github-pat-token

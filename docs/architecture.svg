@@ -1,0 +1,222 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 1030" width="1700" height="1030" font-family="Segoe UI, Helvetica, Arial, sans-serif" xmlns:c2pa="http://c2pa.org/manifest">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker></defs>
+<rect width="1700" height="1030" fill="#ffffff"/>
+<text x="24" y="34" font-size="20" fill="#1b1b1b" font-weight="700" text-anchor="start">Zero-Trust-Architecture: Azure hub-and-spoke, three-tier reference design</text>
+<text x="24" y="54" font-size="12" fill="#666" font-weight="400" text-anchor="start">Private endpoints segmented by trust boundary: each subnet&#x27;s NSG admits only the callers that need it</text>
+<g opacity="1" transform="translate(47.0,247.0) scale(1.15)"><rect width="40" height="40" rx="6" fill="#505050"/><circle cx="20" cy="14" r="6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 34c0-8 5-12 12-12s12 4 12 12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="70" y="307.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">Internet users</text>
+<text x="70" y="320.0" text-anchor="middle" font-size="10.5" fill="#666">HTTPS 443</text>
+<g opacity="1" transform="translate(47.0,497.0) scale(1.15)"><rect width="40" height="40" rx="6" fill="#505050"/><circle cx="20" cy="14" r="6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 34c0-8 5-12 12-12s12 4 12 12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="70" y="557.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">Admin on PAW</text>
+<text x="70" y="570.0" text-anchor="middle" font-size="10.5" fill="#666">Entra ID + MFA</text>
+<g transform="translate(1640,14)"><rect width="40" height="40" rx="6" fill="#24292F"/><circle cx="20" cy="20" r="13" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 27c0-4 2-6 6-6s6 2 6 6M15 14l2 4M25 14l-2 4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="20" cy="20" r="1.2" fill="#fff"/></g>
+<text x="1630" y="31" font-size="12" fill="#222" font-weight="700" text-anchor="end">GitHub</text>
+<text x="1630" y="45" font-size="10.5" fill="#666" font-weight="400" text-anchor="end">Actions + OIDC</text>
+<rect x="170" y="78" width="1520" height="936" rx="3" fill="none" stroke="#7F7F7F" stroke-width="1.3" stroke-dasharray="8 4"/>
+<text x="180" y="97" font-size="13" font-weight="600" fill="#7F7F7F">Azure Subscription</text>
+<rect x="186" y="104" width="1490" height="900" rx="3" fill="none" stroke="#7F7F7F" stroke-width="1" />
+<text x="196" y="123" font-size="12" font-weight="400" fill="#7F7F7F">Resource group: Demo-RG1</text>
+<rect x="206" y="130" width="560" height="520" rx="3" fill="#F2F8FE" stroke="#0078D4" stroke-width="1.6" stroke-dasharray="6 3"/>
+<g transform="translate(214,136) scale(.55)"><rect width="40" height="40" rx="5" fill="#0078D4"/><path d="M8 20l6-6 6 6-6 6zM20 20l6-6 6 6-6 6z" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="242" y="149" font-size="13" font-weight="600" fill="#0078D4">Hub VNet</text>
+<text x="242" y="163" font-size="11" fill="#666">10.0.0.0/16</text>
+<rect x="226" y="190" width="250" height="180" rx="3" fill="#fff" stroke="#4B8BBE" stroke-width="1.2" />
+<text x="236" y="209" font-size="12" font-weight="600" fill="#4B8BBE">AppGatewaySubnet</text>
+<text x="236" y="223" font-size="11" fill="#666">10.0.2.0/26</text>
+<rect x="496" y="190" width="250" height="180" rx="3" fill="#fff" stroke="#4B8BBE" stroke-width="1.2" />
+<text x="506" y="209" font-size="12" font-weight="600" fill="#4B8BBE">AzureFirewallSubnet</text>
+<text x="506" y="223" font-size="11" fill="#666">10.0.0.0/26</text>
+<rect x="226" y="440" width="250" height="180" rx="3" fill="#fff" stroke="#4B8BBE" stroke-width="1.2" />
+<text x="236" y="459" font-size="12" font-weight="600" fill="#4B8BBE">AzureBastionSubnet</text>
+<text x="236" y="473" font-size="11" fill="#666">10.0.1.0/27</text>
+<rect x="496" y="440" width="250" height="180" rx="3" fill="#fff" stroke="#4B8BBE" stroke-width="1.2" />
+<text x="506" y="459" font-size="12" font-weight="600" fill="#4B8BBE">ACA-JobSubnet</text>
+<text x="506" y="473" font-size="11" fill="#666">10.0.3.0/26 · delegated</text>
+<g opacity="1" transform="translate(328.0,252.0) scale(1.15)"><rect width="40" height="40" rx="6" fill="#0078D4"/><path d="M20 7 L33 20 L20 33 L7 20 Z" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 20h12M22 16l4 4-4 4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="351" y="312.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">Application Gateway</text>
+<text x="351" y="325.0" text-anchor="middle" font-size="10.5" fill="#666">WAF_v2 · OWASP 3.2 · Prevention</text>
+<rect x="236" y="350" width="38.1" height="16" rx="8" fill="#5E5E5E"/>
+<text x="255.05" y="361.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">NSG</text>
+<rect x="280.1" y="350" width="172.1" height="16" rx="8" fill="#C79B00"/>
+<text x="366.15000000000003" y="361.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">TLS cert from Key Vault</text>
+<g opacity="1" transform="translate(598.0,252.0) scale(1.15)"><rect width="40" height="40" rx="6" fill="#E8590C"/><path d="M7 11h26M7 19h26M7 27h26M16 11v8M24 19v8M16 27v4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="621" y="312.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">Azure Firewall</text>
+<text x="621" y="325.0" text-anchor="middle" font-size="10.5" fill="#666">Threat intel: Deny · DNS proxy</text>
+<rect x="506" y="350" width="118.5" height="16" rx="8" fill="#E8590C"/>
+<text x="565.25" y="361.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">FQDN allow-list</text>
+<g opacity="0.4" transform="translate(328.0,497.0) scale(1.15)"><rect width="40" height="40" rx="6" fill="#0078D4"/><rect x="8" y="9" width="24" height="16" rx="2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 31h10M20 25v6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 17l3 3-3 3M22 23h4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="351" y="557.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">Azure Bastion</text>
+<text x="351" y="570.0" text-anchor="middle" font-size="10.5" fill="#666">Host currently disabled in code</text>
+<rect x="236" y="590" width="225.70000000000002" height="16" rx="8" fill="#7B1FA2"/>
+<text x="348.85" y="601.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">NSG rule ready: 22 to AppSubnet</text>
+<g opacity="1" transform="translate(598.0,497.0) scale(1.15)"><rect width="40" height="40" rx="6" fill="#0078D4"/><path d="M20 6l6 3.5v7L20 20l-6-3.5v-7zM13 21l6 3.5v7L13 35l-6-3.5v-7zM27 21l6 3.5v7L27 35l-6-3.5v-7z" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" transform="scale(.95) translate(1,1)"/></g>
+<text x="621" y="557.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">Container Apps Job</text>
+<text x="621" y="570.0" text-anchor="middle" font-size="10.5" fill="#666">Self-hosted runner · KEDA 0..N</text>
+<rect x="506" y="590" width="91.7" height="16" rx="8" fill="#5E5E5E"/>
+<text x="551.85" y="601.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">NSG deny-in</text>
+<rect x="603.7" y="590" width="38.1" height="16" rx="8" fill="#E8590C"/>
+<text x="622.75" y="601.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">UDR</text>
+<rect x="647.8000000000001" y="590" width="91.7" height="16" rx="8" fill="#3A9E3A"/>
+<text x="693.6500000000001" y="601.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">Private env</text>
+<rect x="806" y="130" width="760" height="520" rx="3" fill="#F2F8FE" stroke="#0078D4" stroke-width="1.6" stroke-dasharray="6 3"/>
+<g transform="translate(814,136) scale(.55)"><rect width="40" height="40" rx="5" fill="#0078D4"/><path d="M8 20l6-6 6 6-6 6zM20 20l6-6 6 6-6 6z" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="842" y="149" font-size="13" font-weight="600" fill="#0078D4">Spoke VNet</text>
+<text x="842" y="163" font-size="11" fill="#666">10.20.0.0/16</text>
+<rect x="826" y="190" width="220" height="180" rx="3" fill="#fff" stroke="#4B8BBE" stroke-width="1.2" />
+<text x="836" y="209" font-size="12" font-weight="600" fill="#4B8BBE">WebSubnet</text>
+<text x="836" y="223" font-size="11" fill="#666">10.20.0.0/24 · delegated</text>
+<rect x="1066" y="190" width="220" height="180" rx="3" fill="#fff" stroke="#4B8BBE" stroke-width="1.2" />
+<text x="1076" y="209" font-size="12" font-weight="600" fill="#4B8BBE">AppSubnet</text>
+<text x="1076" y="223" font-size="11" fill="#666">10.20.1.0/24</text>
+<rect x="1306" y="190" width="240" height="180" rx="3" fill="#fff" stroke="#4B8BBE" stroke-width="1.2" />
+<text x="1316" y="209" font-size="12" font-weight="600" fill="#4B8BBE">DataSubnet</text>
+<text x="1316" y="223" font-size="11" fill="#666">10.20.3.0/24</text>
+<rect x="826" y="440" width="460" height="180" rx="3" fill="#fff" stroke="#4B8BBE" stroke-width="1.2" />
+<text x="836" y="459" font-size="12" font-weight="600" fill="#4B8BBE">WebEndpointSubnet</text>
+<text x="836" y="473" font-size="11" fill="#666">10.20.5.0/24</text>
+<rect x="1306" y="440" width="240" height="180" rx="3" fill="#fff" stroke="#4B8BBE" stroke-width="1.2" />
+<text x="1316" y="459" font-size="12" font-weight="600" fill="#4B8BBE">InfraPrivateEndpointsSubnet</text>
+<text x="1316" y="473" font-size="11" fill="#666">10.20.4.0/24</text>
+<g opacity="1" transform="translate(913.0,247.0) scale(1.15)"><rect width="40" height="40" rx="6" fill="#0078D4"/><circle cx="20" cy="20" r="12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="20" cy="20" rx="5" ry="12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 20h24M10 13h20M10 27h20" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="936" y="307.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">App Service</text>
+<text x="936" y="320.0" text-anchor="middle" font-size="10.5" fill="#666">VNet integration: outbound only</text>
+<rect x="836" y="325" width="38.1" height="16" rx="8" fill="#5E5E5E"/>
+<text x="855.05" y="336.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">NSG</text>
+<rect x="880.1" y="325" width="38.1" height="16" rx="8" fill="#E8590C"/>
+<text x="899.15" y="336.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">UDR</text>
+<rect x="924.2" y="325" width="131.9" height="16" rx="8" fill="#3A9E3A"/>
+<text x="990.1500000000001" y="336.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">Public access off</text>
+<g opacity="1" transform="translate(1092.0,250.0) scale(1.0)"><rect width="40" height="40" rx="6" fill="#0078D4"/><circle cx="9" cy="20" r="3.5" fill="#fff"/><circle cx="31" cy="11" r="3.5" fill="#fff"/><circle cx="31" cy="20" r="3.5" fill="#fff"/><circle cx="31" cy="29" r="3.5" fill="#fff"/><path d="M13 20h6M19 20L28 11M19 20h9M19 20L28 29" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="1112" y="304.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">Internal LB</text>
+<text x="1112" y="317.0" text-anchor="middle" font-size="10.5" fill="#666">10.20.1.10 : 80</text>
+<g opacity="1" transform="translate(1216.0,250.0) scale(1.0)"><rect width="40" height="40" rx="6" fill="#0078D4"/><rect x="6" y="8" width="20" height="14" rx="2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="14" y="16" width="20" height="14" rx="2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="15.5" y="17.5" width="17" height="11" rx="1" fill="#fff" fill-opacity=".25"/><path d="M20 34h8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="1236" y="304.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">VM Scale Set</text>
+<text x="1236" y="317.0" text-anchor="middle" font-size="10.5" fill="#666">Node API :3000 · 1-2</text>
+<polyline points="1134,270 1214,270" fill="none" stroke="#444" stroke-width="1.6"  marker-end="url(#ar)"/>
+<rect x="1076" y="325" width="38.1" height="16" rx="8" fill="#5E5E5E"/>
+<text x="1095.05" y="336.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">NSG</text>
+<rect x="1120.1" y="325" width="38.1" height="16" rx="8" fill="#E8590C"/>
+<text x="1139.1499999999999" y="336.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">UDR</text>
+<rect x="1164.1999999999998" y="325" width="105.10000000000001" height="16" rx="8" fill="#3A9E3A"/>
+<text x="1216.7499999999998" y="336.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">Encr. at host</text>
+<g transform="translate(1359.0,248.0) scale(0.85)"><rect width="40" height="40" rx="6" fill="#3A9E3A"/><circle cx="9" cy="20" r="3.5" fill="#fff"/><circle cx="31" cy="20" r="3.5" fill="#fff"/><path d="M13 20h14M17 15l-5 5 5 5M23 15l5 5-5 5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="1376" y="296" text-anchor="middle" font-size="10.5" font-weight="600" fill="#2E7D32">SQL PE</text>
+<polyline points="1395,265 1454,265" fill="none" stroke="#3A9E3A" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+<g opacity="1" transform="translate(1457.0,246.0) scale(0.95)"><rect width="40" height="40" rx="6" fill="#0078D4"/><ellipse cx="20" cy="11" rx="11" ry="4.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 11v18c0 2.5 5 4.5 11 4.5s11-2 11-4.5V11M9 20c0 2.5 5 4.5 11 4.5s11-2 11-4.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="1476" y="298.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">Azure SQL</text>
+<text x="1476" y="311.0" text-anchor="middle" font-size="10.5" fill="#666">Entra-only</text>
+<rect x="1316" y="325" width="172.1" height="16" rx="8" fill="#5E5E5E"/>
+<text x="1402.05" y="336.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">NSG: 1433 from App only</text>
+<rect x="1316" y="346" width="38.1" height="16" rx="8" fill="#E8590C"/>
+<text x="1335.05" y="357.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">UDR</text>
+<g transform="translate(863.0,513.0) scale(0.85)"><rect width="40" height="40" rx="6" fill="#3A9E3A"/><circle cx="9" cy="20" r="3.5" fill="#fff"/><circle cx="31" cy="20" r="3.5" fill="#fff"/><path d="M13 20h14M17 15l-5 5 5 5M23 15l5 5-5 5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="880" y="561" text-anchor="middle" font-size="10.5" font-weight="600" fill="#2E7D32">Web App PE</text>
+<polyline points="899,530 958,530" fill="none" stroke="#3A9E3A" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+<g opacity="1" transform="translate(961.0,511.0) scale(0.95)"><rect width="40" height="40" rx="6" fill="#0078D4"/><circle cx="20" cy="20" r="12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="20" cy="20" rx="5" ry="12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 20h24M10 13h20M10 27h20" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="980" y="563.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">App Service</text>
+<text x="980" y="576.0" text-anchor="middle" font-size="10.5" fill="#666">inbound via PE</text>
+<g transform="translate(1093.0,513.0) scale(0.85)"><rect width="40" height="40" rx="6" fill="#3A9E3A"/><circle cx="9" cy="20" r="3.5" fill="#fff"/><circle cx="31" cy="20" r="3.5" fill="#fff"/><path d="M13 20h14M17 15l-5 5 5 5M23 15l5 5-5 5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="1110" y="561" text-anchor="middle" font-size="10.5" font-weight="600" fill="#2E7D32">Key Vault PE</text>
+<polyline points="1129,530 1188,530" fill="none" stroke="#3A9E3A" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+<g opacity="1" transform="translate(1191.0,511.0) scale(0.95)"><rect width="40" height="40" rx="6" fill="#C79B00"/><circle cx="15" cy="20" r="6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 20h13M30 20v6M34 20v4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="1210" y="563.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">Key Vault</text>
+<text x="1210" y="576.0" text-anchor="middle" font-size="10.5" fill="#666">RBAC only</text>
+<rect x="836" y="590" width="185.5" height="16" rx="8" fill="#5E5E5E"/>
+<text x="928.75" y="601.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">NSG: 443 from AppGW + ACA</text>
+<rect x="1027.5" y="590" width="38.1" height="16" rx="8" fill="#E8590C"/>
+<text x="1046.55" y="601.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">UDR</text>
+<g transform="translate(1359.0,513.0) scale(0.85)"><rect width="40" height="40" rx="6" fill="#3A9E3A"/><circle cx="9" cy="20" r="3.5" fill="#fff"/><circle cx="31" cy="20" r="3.5" fill="#fff"/><path d="M13 20h14M17 15l-5 5 5 5M23 15l5 5-5 5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="1376" y="561" text-anchor="middle" font-size="10.5" font-weight="600" fill="#2E7D32">ACR PE</text>
+<polyline points="1395,530 1454,530" fill="none" stroke="#3A9E3A" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+<g opacity="1" transform="translate(1457.0,511.0) scale(0.95)"><rect width="40" height="40" rx="6" fill="#0078D4"/><path d="M20 6l12 6.5v15L20 34 8 27.5v-15zM8 12.5L20 19l12-6.5M20 19v15" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="1476" y="563.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">Container Registry</text>
+<text x="1476" y="576.0" text-anchor="middle" font-size="10.5" fill="#666">Admin off</text>
+<rect x="1316" y="590" width="165.4" height="16" rx="8" fill="#5E5E5E"/>
+<text x="1398.7" y="601.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">NSG: 443 from ACA only</text>
+<rect x="1487.4" y="590" width="38.1" height="16" rx="8" fill="#E8590C"/>
+<text x="1506.45" y="601.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">UDR</text>
+<polyline points="766,250 806,250" fill="none" stroke="#0078D4" stroke-width="2.2"  marker-end="url(#ar)" marker-start="url(#ar)"/>
+<text x="786" y="240" font-size="9.5" fill="#0078D4" font-weight="700" text-anchor="middle">peering</text>
+<polyline points="100,275 226,275" fill="none" stroke="#C62828" stroke-width="2.2"  marker-end="url(#ar)"/>
+<rect x="130.8" y="253" width="58.4" height="14" fill="#fff" fill-opacity=".92"/>
+<text x="160" y="264" text-anchor="middle" font-size="10.5" fill="#C62828" font-weight="600">HTTPS 443</text>
+<circle cx="205" cy="275" r="10" fill="#C62828"/><text x="205" y="279" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">1</text>
+<polyline points="330,370 330,404 930,404 930,513" fill="none" stroke="#C62828" stroke-width="2.2"  marker-end="url(#ar)"/>
+<circle cx="440" cy="404" r="10" fill="#C62828"/><text x="440" y="408" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">2</text>
+<rect x="600.8" y="398" width="198.4" height="14" fill="#fff" fill-opacity=".95"/>
+<text x="700" y="408" font-size="10" fill="#C62828" font-weight="700" text-anchor="middle">Backend pool = web app via PE, 443</text>
+<polyline points="372,370 372,422 1160,422 1160,513" fill="none" stroke="#C62828" stroke-width="1.8" stroke-dasharray="6 3" marker-end="url(#ar)"/>
+<circle cx="480" cy="422" r="10" fill="#C62828"/><text x="480" y="426" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">3</text>
+<rect x="1004.0" y="416" width="92.00000000000001" height="14" fill="#fff" fill-opacity=".95"/>
+<text x="1050" y="426" font-size="10" fill="#C62828" font-weight="700" text-anchor="middle">Cert fetch, 443</text>
+<polyline points="1046,270 1090,270" fill="none" stroke="#C62828" stroke-width="2.2"  marker-end="url(#ar)"/>
+<circle cx="1066" cy="252" r="10" fill="#C62828"/><text x="1066" y="256" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">4</text>
+<polyline points="1258,270 1306,270" fill="none" stroke="#C62828" stroke-width="2.2"  marker-end="url(#ar)"/>
+<circle cx="1282" cy="252" r="10" fill="#C62828"/><text x="1282" y="256" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">5</text>
+<text x="1282" y="292" font-size="10" fill="#C62828" font-weight="700" text-anchor="middle">1433</text>
+<polyline points="600,620 600,640 930,640 930,620" fill="none" stroke="#2E7D32" stroke-width="2.2"  marker-end="url(#ar)"/>
+<circle cx="600" cy="630" r="10" fill="#C62828"/><text x="600" y="634" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">6</text>
+<polyline points="640,620 640,634 1426,634 1426,620" fill="none" stroke="#2E7D32" stroke-width="2.2"  marker-end="url(#ar)"/>
+<rect x="975.6" y="639" width="248.8" height="14" fill="#fff" fill-opacity=".95"/>
+<text x="1100" y="649" font-size="10" fill="#2E7D32" font-weight="700" text-anchor="middle">443 to web app, Key Vault and ACR endpoints</text>
+<polyline points="621,190 621,118 1660,118 1660,58" fill="none" stroke="#E8590C" stroke-width="2.2" stroke-dasharray="7 4" marker-end="url(#ar)" marker-start="url(#ar)"/>
+<circle cx="621" cy="150" r="10" fill="#C62828"/><text x="621" y="154" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">7</text>
+<text x="1090" y="114" font-size="10.5" fill="#E8590C" font-weight="700" text-anchor="middle">Egress 443 via Firewall (FQDN allow-list) · runner polls workflow queue</text>
+<polyline points="93,520 226,520" fill="none" stroke="#7B1FA2" stroke-width="2.2" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+<circle cx="205" cy="520" r="10" fill="#C62828"/><text x="205" y="524" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">8</text>
+<polyline points="276,440 276,386 1176,386 1176,370" fill="none" stroke="#7B1FA2" stroke-width="2.0" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+<rect x="584.0" y="380" width="232.00000000000003" height="14" fill="#fff" fill-opacity=".95"/>
+<text x="700" y="390" font-size="10" fill="#7B1FA2" font-weight="700" text-anchor="middle">SSH 22, Entra login (if Bastion enabled)</text>
+<rect x="186" y="676" width="1490" height="150" rx="3" fill="#FCFCFC" stroke="#7F7F7F" stroke-width="1" />
+<text x="196" y="695" font-size="12" font-weight="400" fill="#7F7F7F">Platform, identity and governance</text>
+<g opacity="1" transform="translate(255.0,715.0) scale(1.0)"><rect width="40" height="40" rx="6" fill="#0F6CBD"/><path d="M20 6l12 7v14l-12 7-12-7V13z" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 6v28M8 13l24 14M32 13L8 27" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="275" y="769.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">Entra app gh-deploy</text>
+<text x="275" y="782.0" text-anchor="middle" font-size="10.5" fill="#666">OIDC · no secret</text>
+<g opacity="1" transform="translate(415.0,715.0) scale(1.0)"><rect width="40" height="40" rx="6" fill="#5E5E5E"/><circle cx="20" cy="15" r="5.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 33c0-7 5-11 11-11s11 4 11 11" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M26 10l4 4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="435" y="769.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">Managed identities</text>
+<text x="435" y="782.0" text-anchor="middle" font-size="10.5" fill="#666">runner · app gateway</text>
+<g opacity="1" transform="translate(575.0,715.0) scale(1.0)"><rect width="40" height="40" rx="6" fill="#0078D4"/><rect x="7" y="9" width="26" height="7" rx="1.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="7" y="19" width="26" height="7" rx="1.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 12.5h.1M11 22.5h.1M7 30h26" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="595" y="769.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">Terraform state</text>
+<text x="595" y="782.0" text-anchor="middle" font-size="10.5" fill="#666">No shared keys</text>
+<g opacity="1" transform="translate(735.0,715.0) scale(1.0)"><rect width="40" height="40" rx="6" fill="#00A3A3"/><path d="M9 31V19M16 31V12M23 31V22M30 31V9" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="755" y="769.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">Log Analytics</text>
+<text x="755" y="782.0" text-anchor="middle" font-size="10.5" fill="#666">Central logs</text>
+<g opacity="1" transform="translate(895.0,715.0) scale(1.0)"><rect width="40" height="40" rx="6" fill="#7A3FBF"/><path d="M20 7a9 9 0 0 1 5 16.5V27h-10v-3.5A9 9 0 0 1 20 7zM15 31h10M17 35h6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="915" y="769.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">App Insights</text>
+<text x="915" y="782.0" text-anchor="middle" font-size="10.5" fill="#666">Web app APM</text>
+<g opacity="1" transform="translate(1055.0,715.0) scale(1.0)"><rect width="40" height="40" rx="6" fill="#0078D4"/><circle cx="20" cy="20" r="12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 20h24M20 8c-6 6-6 18 0 24M20 8c6 6 6 18 0 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="1075" y="769.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">Private DNS zones</text>
+<text x="1075" y="782.0" text-anchor="middle" font-size="10.5" fill="#666">SQL: spoke · Web: hub · KV, ACR: both</text>
+<g opacity="1" transform="translate(1280.0,715.0) scale(1.0)"><rect width="40" height="40" rx="6" fill="#0078D4"/><path d="M20 6l11 4v9c0 8-5 13-11 15C14 32 9 27 9 19v-9z" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 20l4 4 7-8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="1300" y="769.0" text-anchor="middle" font-size="11.5" font-weight="600" fill="#222">Azure Policy</text>
+<text x="1300" y="782.0" text-anchor="middle" font-size="10.5" fill="#666">26 built-ins + tags</text>
+<rect x="1380" y="715" width="145.3" height="16" rx="8" fill="#0078D4"/>
+<text x="1452.65" y="726.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">Audit-first rollout</text>
+<rect x="1380" y="737" width="152.0" height="16" rx="8" fill="#0078D4"/>
+<text x="1456.0" y="748.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">Deny / DINE / Modify</text>
+<rect x="1380" y="759" width="185.5" height="16" rx="8" fill="#7F7F7F"/>
+<text x="1472.75" y="770.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">Firewall-subnet exemption</text>
+<rect x="186" y="842" width="1490" height="150" rx="3" fill="#FFFFFF" stroke="#7F7F7F" stroke-width="1" />
+<text x="196" y="861" font-size="12" font-weight="400" fill="#7F7F7F">Legend: traffic flows and deployment layers</text>
+<circle cx="212" cy="880" r="8" fill="#C62828"/><text x="212" y="883.5" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">1</text>
+<text x="226" y="884" font-size="11.5" fill="#222">Users reach the WAF (HTTP redirects to HTTPS)</text>
+<circle cx="212" cy="906" r="8" fill="#C62828"/><text x="212" y="909.5" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">2</text>
+<text x="226" y="910" font-size="11.5" fill="#222">WAF backend pool is the web app, reached through its private endpoint</text>
+<circle cx="212" cy="932" r="8" fill="#C62828"/><text x="212" y="935.5" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">3</text>
+<text x="226" y="936" font-size="11.5" fill="#222">Gateway identity fetches its TLS certificate from the Key Vault endpoint</text>
+<circle cx="212" cy="958" r="8" fill="#C62828"/><text x="212" y="961.5" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">4</text>
+<text x="226" y="962" font-size="11.5" fill="#222">Web app calls the app tier through the internal LB (80 to 3000)</text>
+<circle cx="772" cy="880" r="8" fill="#C62828"/><text x="772" y="883.5" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">5</text>
+<text x="786" y="884" font-size="11.5" fill="#222">App tier reaches SQL on 1433; only AppSubnet may enter DataSubnet</text>
+<circle cx="772" cy="906" r="8" fill="#2E7D32"/><text x="772" y="909.5" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">6</text>
+<text x="786" y="910" font-size="11.5" fill="#222">Runner deploys to the web, Key Vault and ACR endpoints (443)</text>
+<circle cx="772" cy="932" r="8" fill="#E8590C"/><text x="772" y="935.5" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">7</text>
+<text x="786" y="936" font-size="11.5" fill="#222">All egress is forced through Azure Firewall</text>
+<circle cx="772" cy="958" r="8" fill="#7B1FA2"/><text x="772" y="961.5" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">8</text>
+<text x="786" y="962" font-size="11.5" fill="#222">Admin SSH via Bastion (rule in place; host currently disabled)</text>
+<text x="1340" y="884" font-size="11.5" fill="#222" font-weight="700" text-anchor="start">Layer 1  bootstrap.tf    local PAW</text>
+<text x="1340" y="910" font-size="11.5" fill="#222" font-weight="700" text-anchor="start">Layer 2  main.tf         GitHub Actions</text>
+<text x="1340" y="932" font-size="11.5" fill="#222" font-weight="700" text-anchor="start">Layer 3  catalogue.tf    GitHub Actions</text>
+<text x="1340" y="962" font-size="10.5" fill="#666" font-weight="400" text-anchor="start">Deny-all NSGs: 6 (AppGW, Web, App, DB, Infra-PE, Web-PE)</text>
+<text x="1340" y="978" font-size="10.5" fill="#666" font-weight="400" text-anchor="start">OIDC tokens only for the &#x27;production&#x27; environment</text>
+<metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYTozZDA0ZTBhMC02ODcyLTQ1MjctYmQ4YS0yYzdhYzY3MDY5NTAAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaFH+du4JAM6ZeAsaokIbwIoAAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDphN2QxZjEyNi0zYWJlLTRlOTktOThjZC03NjRjMTgzYWM1MDhscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNoV+aYdde7LmJkx3aYSzAZDwAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFggoH6Te5lnuMY4xhn00aQ//XgG01M+ofNYkZGjzYevsXakZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaFJG0f3gnxPNFrRc2IWmecIAAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRMAAAAAAAAAAAAAAAAZGhhc2hYIPOR+44haYJ6H8a9r2IO5E84wYnu/I8axEyBjQlBKaBPZG5hbWVuanVtYmYgbWFuaWZlc3RqZXhjbHVzaW9uc4GiZXN0YXJ0GXxtZmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOjNkMDRlMGEwLTY4NzItNDUyNy1iZDhhLTJjN2FjNjcwNjk1MC9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOjZkOGM3NGUxLWJlN2MtNDdlOS05MGRjLTgzM2EyYmI1MTY4OXJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCCgfpN7mWe4xjjGGfTRpD/9eAbTUz6h81iRkaPNh6+xdqJjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFgg+2qjkoomiq82087RlMWopkivnUNbH9IZb32bwaTV+HOiY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggaChQtGZYSV+OjOIjogtvNG/vj0ki1MeRoqwdknFqAHx0Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQFwNVcVITxQRvLgiBHeiHILjUfNqxD8P8clLEtT/cN8v47k4Gnfq3srlP0E0yZd9MYtqNVtw+l/d7c9cl01Niks=</c2pa:manifest></metadata></svg>

@@ -100,12 +100,12 @@ locals {
       delegate       = false
       pe_policies    = "Enabled"
     }
-    "InfraPrivateEndpointsSubnet" = {
+    "InfraPrivateEndpointsSubnet" = { # for ACR private endpoint, so app gateway doesn't access the ACR
       address_prefix = "10.20.4.0/24"
       delegate       = false
       pe_policies    = "Enabled" # makes NSG rules apply to private endpoints
     }
-    "WebEndpointSubnet" = {
+    "WebEndpointSubnet" = { # For web app and key vault private endpoints
       address_prefix = "10.20.5.0/24"
       delegate       = false
       pe_policies    = "Enabled"
@@ -170,12 +170,74 @@ resource "azurerm_public_ip" "public_ip" {
   domain_name_label = each.value == "AppGateway" ? local.app_gw_dns_prefix : null
 }
 
+resource "azurerm_firewall_policy" "policy" {
+  name                = "demo-fw-policy"
+  location            = data.azurerm_resource_group.rg.location
+  resource_group_name = data.azurerm_resource_group.rg.name
+  sku                 = "Standard"  
+
+  threat_intelligence_mode = "Deny"  
+
+  dns {
+    proxy_enabled = true            
+  }
+}
+
+resource "azurerm_firewall_policy_rule_collection_group" "main" {
+  name               = "demo-rcg"
+  firewall_policy_id = azurerm_firewall_policy.policy.id
+  priority           = 100
+
+  network_rule_collection {
+    name     = "aca-required"
+    priority = 100
+    action   = "Allow"
+
+    rule {
+      name                  = "aca-service-tags"
+      protocols             = ["TCP"]
+      source_addresses      = ["10.0.3.0/26"]
+      destination_addresses = [
+        "MicrosoftContainerRegistry", "AzureFrontDoor.FirstParty",
+        "AzureActiveDirectory", "AzureContainerRegistry", "AzureKeyVault",
+        "AzureMonitor"   
+      ]
+      destination_ports = ["443"]
+    }
+  }
+
+  application_rule_collection {
+    name     = "testcollection"
+    priority = 200
+    action   = "Allow"
+
+    rule {
+      name             = "FW_demo_rule"
+      source_addresses = ["10.20.0.0/16", "10.0.3.0/26"]
+
+      destination_fqdns = [
+        "github.com", "*.github.com", "*.actions.githubusercontent.com",
+        "*.githubusercontent.com", "*.blob.core.windows.net", "*.aadcdn.msftauth.net",
+        "*.azurecr.io", "*.vault.azure.net", "login.microsoftonline.com", "*.aadcdn.msauth.net",
+        "*.azure.com", "*.microsoft.com", "mcr.microsoft.com", "*.data.mcr.microsoft.com",
+        "releases.hashicorp.com", "registry.terraform.io", "*.ubuntu.com"
+      ]
+
+      protocols {
+        type = "Https"
+        port = 443
+      }
+    }
+  }
+}
+
 resource "azurerm_firewall" "firewall" {
   name                = "demo_firewall"
   location            = data.azurerm_resource_group.rg.location
   resource_group_name = data.azurerm_resource_group.rg.name
   sku_name            = "AZFW_VNet"
   sku_tier            = "Standard"
+  firewall_policy_id  = azurerm_firewall_policy.policy.id
 
   ip_configuration {
     name                 = "FW_configuration"
@@ -183,54 +245,7 @@ resource "azurerm_firewall" "firewall" {
     public_ip_address_id = azurerm_public_ip.public_ip["AzureFirewall"].id
   }
 
-  dns_proxy_enabled = true
-  threat_intel_mode = "Deny"
-}
-
-resource "azurerm_firewall_application_rule_collection" "fwrc" {
-  name                = "testcollection"
-  azure_firewall_name = azurerm_firewall.firewall.name
-  resource_group_name = data.azurerm_resource_group.rg.name
-  priority            = 100
-  action              = "Allow"
-
-  rule {
-    name = "FW_demo_rule"
-
-    source_addresses = [
-      "10.20.0.0/16", 
-      "10.0.3.0/26"
-    ]
-
-     target_fqdns = [
-      "github.com", "*.github.com", "*.actions.githubusercontent.com",
-      "*.githubusercontent.com", "*.blob.core.windows.net", "*.aadcdn.msftauth.net",
-      "*.azurecr.io", "*.vault.azure.net", "login.microsoftonline.com", "*.aadcdn.msauth.net",
-      "*.azure.com", "*.microsoft.com", "mcr.microsoft.com", "*.data.mcr.microsoft.com",
-      "releases.hashicorp.com", "registry.terraform.io", "*.ubuntu.com"
-    ]
-
-    protocol {
-      port = "443"
-      type = "Https"
-    }
-  }
-}
-
-resource "azurerm_firewall_network_rule_collection" "aca" {
-  name                = "aca-required"
-  azure_firewall_name = azurerm_firewall.firewall.name
-  resource_group_name = data.azurerm_resource_group.rg.name
-  priority            = 110
-  action              = "Allow"
-
-  rule {
-    name                  = "aca-service-tags"
-    source_addresses      = ["10.0.3.0/26"]
-    destination_addresses = ["MicrosoftContainerRegistry", "AzureFrontDoor.FirstParty", "AzureActiveDirectory", "AzureContainerRegistry", "AzureKeyVault"]
-    destination_ports     = ["443"]
-    protocols             = ["TCP"]
-  }
+  depends_on = [azurerm_firewall_policy_rule_collection_group.main]
 }
 
 resource "azurerm_route_table" "rt" {
@@ -252,7 +267,8 @@ resource "azurerm_subnet_route_table_association" "route" {
   route_table_id = azurerm_route_table.rt.id
 
   depends_on = [
-    azurerm_route_table.rt
+    azurerm_firewall.firewall, 
+    azurerm_firewall_policy_rule_collection_group.main
   ]
 }
 
@@ -261,7 +277,9 @@ resource "azurerm_subnet_route_table_association" "route-ghr" {
   route_table_id = azurerm_route_table.rt.id
 
   depends_on = [
-    azurerm_route_table.rt
+    azurerm_firewall.firewall,
+    azurerm_firewall_policy_rule_collection_group.main,
+    azurerm_subnet_route_table_association.route
   ]
 }
 
@@ -446,7 +464,7 @@ resource "azurerm_network_security_group" "appgw" {
     access                       = "Allow"
     protocol                     = "Tcp"
     source_port_range            = "*"
-    destination_port_range       = "80"
+    destination_port_ranges      = ["80", "443"]
     source_address_prefixes      = azurerm_subnet.Hub_vnet_subnets["AppGatewaySubnet"].address_prefixes
     destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["WebEndpointSubnet"].address_prefixes
     description                  = "App Gateway to web tier on port 80"
@@ -558,7 +576,7 @@ resource "azurerm_network_security_group" "app" {
     access                       = "Allow"
     protocol                     = "Tcp"
     source_port_range            = "*"
-    destination_port_ranges      = ["3000", "80"]
+    destination_port_ranges      = ["3000", "80", "443"]
     source_address_prefixes      = azurerm_subnet.Spoke_vnet_subnets["WebSubnet"].address_prefixes
     destination_address_prefixes = azurerm_subnet.Spoke_vnet_subnets["AppSubnet"].address_prefixes
     description                  = "Only the web tier can reach the app port"
@@ -1176,7 +1194,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
   depends_on = [
     azurerm_lb_rule.http,
     azurerm_firewall.firewall,
-    azurerm_firewall_application_rule_collection.fwrc,
+    azurerm_firewall_policy_rule_collection_group.main,
     azurerm_subnet_route_table_association.route,
     azurerm_subnet_route_table_association.route-ghr
   ]
