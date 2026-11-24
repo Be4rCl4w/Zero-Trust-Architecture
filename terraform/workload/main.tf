@@ -1327,6 +1327,7 @@ resource "azurerm_role_assignment" "appgw_kv_reader" {
   scope                = data.azurerm_key_vault.kv.id
   role_definition_name = "Key Vault Certificate User"
   principal_id         = azurerm_user_assigned_identity.appgw_identity.principal_id
+  principal_type       = "ServicePrincipal"
 }
 
 resource "azurerm_key_vault_certificate" "tls_cert" {
