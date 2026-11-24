@@ -347,9 +347,15 @@ git push -u origin main
 
 #2. Deploy the web and API tier of the voting application
 - Seed the database with tables and candidates, and also setting up the Virtual Machine Scale Set (VMSS) as a database user, via its managed identity. You can do this by temporary giving your local machine IP allow access to your DB server, then logging to the DB instance and executing the db/schema.sql file. Or for a more secure way, SSH into your VMSS and use `sql` command to connect to the DB and execute the script. With the second option you don't need to touch your network setting since the VMSS subnet is allowed to talk to the database subnet.
-- On the `Actions` tab, manually deploy the web and api yaml pipelines, with the API tier first before the Web tier.
+- On the `Actions` tab, manually deploy the `deploy-web.yaml` and `deploy-api.yaml` workflows, with the API tier first before the Web tier.
+- At first the `deploy-api.yaml` workflow will fail the **End to end health check via App gateway** step, that's fine. The reason is because you haven't deployed the web tier (`deploy-web.yaml`) which is what the App gateway talks to directly. After the web tier is deployed, if you run it again, it will pass. But the first try is enough, it actually deployed the API tier.
 - You can as well update the runner image by triggering the `runner-image.yaml`, this helps to solve the issue of using image tag of v1, and instead use the github hash as the tag.
 
+### Screenshot
+
+![Voting page diagram](docs/Screenshot1.png)
+
+![Result page diagram](docs/Screenshot2.png)
 
 #### Recommended rollout order for policy
 
@@ -392,4 +398,4 @@ This is a demonstration environment. These are the deliberate simplifications an
 
 **Okeke Chiemerie** · [LinkedIn](https://www.linkedin.com/in/chiemerie-okeke) 
 
-*Feedback and questions are welcome. *
+**Feedback and questions are welcome.**
