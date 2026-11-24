@@ -220,7 +220,8 @@ resource "azurerm_firewall_policy_rule_collection_group" "main" {
         "*.githubusercontent.com", "*.blob.core.windows.net", "*.aadcdn.msftauth.net",
         "*.azurecr.io", "*.vault.azure.net", "login.microsoftonline.com", "*.aadcdn.msauth.net",
         "*.azure.com", "*.microsoft.com", "mcr.microsoft.com", "*.data.mcr.microsoft.com",
-        "releases.hashicorp.com", "registry.terraform.io", "*.ubuntu.com"
+        "releases.hashicorp.com", "registry.terraform.io", "*.ubuntu.com", "*://nodesource.com", 
+        "*.nodesource.com", "registry.npmjs.org"
       ]
 
       protocols {
