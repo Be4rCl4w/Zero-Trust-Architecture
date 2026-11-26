@@ -1,0 +1,18 @@
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = ">=4.81.0"
+    }
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = ">=3.5.0"
+    }
+  }
+}
+
+provider "azuread" {}
+
+provider "azurerm" {
+  features {}
+}

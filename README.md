@@ -43,7 +43,7 @@
 | **Pipeline** | GitHub Actions running on a **self-hosted, event-driven runner inside the VNet** (Azure Container Apps Job) |
 | **Identity** | Workload identity federation (OIDC) for CI/CD, managed identities for runtime, Entra ID-only auth for data and admin access |
 | **Governance** | A custom Azure Policy initiative (26 built-in definitions plus tag controls) assigned and managed as code |
-| **Deployed in three layers** | `bootstrap` (from a Privileged Access Workstation), then `main` and `catalogue` (from CI/CD) |
+| **Deployed in three layers** | `bootstrap` (from a Privileged Access Workstation), then `infra` and `policy` (from CI/CD) |
 
 ---
 
@@ -76,8 +76,8 @@ And because configuration drifts, **Azure Policy as Code** continuously audits o
 
 ```
 ┌────────────────────────┐   ┌─────────────────────────────┐   ┌──────────────────────────┐
-│  1. ./platform         │   │  2. ./workload              │   │  3. ./policies           │
-│  bootstrap.tf          │──▶│  main.tf                   │──▶│  catalogue.tf            │
+│  1. ./platform         │   │  2. ./workload              │   │  3. ./workload           │
+│    bootstrap.tf        │──▶│       infra                │──▶│       policy             │
 │                        │   │                             │   │                          │
 │  Run from a local PAW  │   │  Run by GitHub Actions on   │   │  Run by GitHub Actions   │
 │                        │   │  the self-hosted runner     │   │  on the self-hosted      │
@@ -101,7 +101,7 @@ Each decision below lists **what** was chosen, **why**, and the **trade-off** ac
 
 ### 1. Bootstrap from a Privileged Access Workstation, not from CI/CD
 
-- **What:** `bootstrap.tf` is applied once from a local, hardened PAW using the engineer's own Entra identity (`az login`).
+- **What:** `platform/bootstrap.tf` is applied once from a local, hardened PAW using the engineer's own Entra identity (`az login`).
 - **Why:** The platform layer creates the identities, RBAC and runner that CI/CD depends on. It is the root of trust, so it should be created by a verified human on a hardened device, not by an automated identity that does not yet exist.
 - **Trade-off:** Bootstrap uses local state initially (see [state handling](#a-note-on-bootstrap-state)) and is a manual step. It is rarely changed, so the cost is low.
 
@@ -112,7 +112,7 @@ Each decision below lists **what** was chosen, **why**, and the **trade-off** ac
   - Private endpoints and `public_network_access = false` mean **GitHub-hosted runners cannot reach the targets**. Opening firewalls to GitHub's IP ranges would defeat the point.
   - Scale-to-zero means there is **no always-on build server** to patch, attack or pay for.
   - The Container Apps environment itself has public network access **disabled**, and the runner subnet has an NSG that denies all inbound traffic.
-  - After `main.tf` is applied, the runner's own egress is forced through Azure Firewall and limited to the FQDN allow-list.
+  - After `infra` is applied, the runner's own egress is forced through Azure Firewall and limited to the FQDN allow-list.
 - **Trade-off:** More moving parts than a hosted runner (image build, registry, scaler config), in exchange for a pipeline that lives *inside* the trust boundary.
 
 ### 3. Secretless CI/CD with OIDC workload identity federation
@@ -193,7 +193,7 @@ Each decision below lists **what** was chosen, **why**, and the **trade-off** ac
 
 ### 13. Policy as Code with a built-in-first catalogue
 
-- **What:** `catalogue.tf` builds a custom **policy initiative** from **built-in** Azure Policy definitions referenced by GUID, so Microsoft maintains the rule logic. Parameters live in a single map, the initiative is assigned at resource-group scope, and a `policy_enforce` variable switches between **audit-only** and **enforce**. The Azure Firewall subnet is covered by a documented **exemption**, since Azure Firewall subnets cannot have an NSG. Tag inheritance (`Modify`) and logging (`DeployIfNotExists`) each get their own managed identity with only the roles they need.
+- **What:** `policy` builds a custom **policy initiative** from **built-in** Azure Policy definitions referenced by GUID, so Microsoft maintains the rule logic. Parameters live in a single map, the initiative is assigned at resource-group scope, and a `policy_enforce` variable switches between **audit-only** and **enforce**. The Azure Firewall subnet is covered by a documented **exemption**, since Azure Firewall subnets cannot have an NSG. Tag inheritance (`Modify`) and logging (`DeployIfNotExists`) each get their own managed identity with only the roles they need.
 - **Why:** Preventive controls (`Deny`) stop bad configuration from being created. Detective controls (`Audit`) catch drift. Remediation controls fix gaps automatically. Using built-ins reduces maintenance and keeps definitions aligned with Microsoft's own guidance.
 - **Trade-off:** Built-in policy GUIDs can be deprecated or versioned, so the catalogue needs periodic review.
 
@@ -274,11 +274,11 @@ Azure requires these to be unique worldwide, so change them before you deploy:
 | Resource | Where | Current value |
 |---|---|---|
 | Terraform state storage account | `bootstrap.tf` | `sttfstate1unique123` |
-| Key Vault | `bootstrap.tf` (and `data` blocks in `main.tf`) | `Deemo-kv213` |
-| Container Registry | `bootstrap.tf` (and `data` blocks in `main.tf`) | `myghrunneracr123` |
-| SQL Server | `main.tf` | `demosqlserver0978432` |
-| Web App | `main.tf` | `miWebapp65748` |
-| App Gateway DNS label | `main.tf` | `mydemozero-trust-app` |
+| Key Vault | `bootstrap.tf` (and `data` blocks in `infra`) | `Deemo-kv213` |
+| Container Registry | `bootstrap.tf` (and `data` blocks in `infra`) | `myghrunneracr123` |
+| SQL Server | `infra` | `demosqlserver0978432` |
+| Web App | `infra` | `miWebapp65748` |
+| App Gateway DNS label | `infra` | `mydemozero-trust-app` |
 
 ### Input variables
 
@@ -291,12 +291,12 @@ Azure requires these to be unique worldwide, so change them before you deploy:
 | `runner_labels` | bootstrap | Labels used in `runs-on` |
 | `max_runners` | bootstrap | Maximum parallel runner executions |
 | `gh_url`, `reg_token_url` | bootstrap | GitHub URL and runner registration-token API endpoint passed to the container |
-| `vmss_public_key` | main | SSH public key for the VMSS admin user |
-| `object_id` | main | Object ID of the Entra user or group set as SQL administrator |
-| `policy_prefix` | catalogue | Naming prefix for the initiative and assignments |
-| `allowed_locations` | catalogue | Permitted Azure regions |
-| `required_tags` | catalogue | Tags that must exist on resources (inherited from the RG) |
-| `policy_enforce` | catalogue | `true` to enforce, `false` for audit-only (`DoNotEnforce`) |
+| `vmss_public_key` | infra | SSH public key for the VMSS admin user |
+| `object_id` | infra | Object ID of the Entra user or group set as SQL administrator |
+| `policy_prefix` | policy | Naming prefix for the initiative and assignments |
+| `allowed_locations` | policy | Permitted Azure regions |
+| `required_tags` | policy | Tags that must exist on resources (inherited from the RG) |
+| `policy_enforce` | policy | `true` to enforce, `false` for audit-only (`DoNotEnforce`) |
 
 
 ### Step 1: Bootstrap Platform Deployment (via Local PAW)
@@ -304,10 +304,23 @@ Azure requires these to be unique worldwide, so change them before you deploy:
 This creates the platform foundation. It is run once, by a human.
 **What it creates:** resource groups (`rg-tfstate`, `Demo-RG1`); the custom IaC role and the `gh-deploy` app registration with its OIDC federated credential and role assignments; the locked-down Terraform state storage account; hub and spoke VNets with peering and subnets; Key Vault (with the PAT and diagnostics); Azure Container Registry and the runner image (built with `az acr build`); the Container Apps environment and the event-driven runner job.
 
+> Note: The Log Analytics Workspace used here wasn't created in this project, it was injected via terraform `data`. Replace that by creating a new one. (Line 24 - 27)
+
+```hcl
+resource "azurerm_log_analytics_workspace" "demo" {
+  name                = "demo-LAW"
+  location            = azurerm_resource_group.rg["Demo-RG1"].location
+  resource_group_name = azurerm_resource_group.rg["Demo-RG1"].name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+```
+
+
 ```bash
 #1. Clone the repository and navigate to the project directory:
 git clone https://github.com/Be4rCl4w@121987346/Zero-Trust-Architecture.git
-cd Zero-Trust-Architecture/terraform/platform
+cd Zero-Trust-Architecture/platform
 
 #2. Authenticate to Azure via CLI:
 az login
@@ -325,14 +338,14 @@ Bootstrap creates the storage account that holds everyone else's state, so its f
  
 ### Step 2: Main Infrastructure & Policy Deployment (via GitHub Actions CI/CD)
 
-Once the bootstrap phase provisions the self-hosted container app runner, subsequent modifications to `./Workload (3-tier architecture)` and `./Policies (Policy-as-Code)` are automatically handled securely through GitHub Actions using OIDC federation without exposing permanent cloud credentials.
+Once the bootstrap phase provisions the self-hosted container app runner, subsequent modifications to `./infra (3-tier architecture)` and `./policy (Policy-as-Code)` are automatically handled securely through GitHub Actions using OIDC federation without exposing permanent cloud credentials.
 
 In the GitHub repository:
 
 - **Settings, Environments:** create an environment named exactly production. The federated credential only trusts tokens for this environment. Add **required reviewers** for a manual approval gate.
 - Add Environment Secrets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID`, `ADMIN_OBJECT_ID (your user object ID, used as the DB server admin)`, `APP_URL (URL of the App Gateway)`, `AZURE_RESOURCE_GROUP`, `AZURE_WEBAPP_NAME`, `DB_NAME`, `DB_SERVER`, `KEY_VAULT_NAME` and a `VMSS_PUBLIC_KEY` variable. These are identifiers, not credentials, since there is no client secret anywhere.
 
-> Each of `main` and `catalogue` has a `backend.tf` that points at the storage account created in Step 1. Shared keys are disabled, so the backend must use Entra authentication
+> Each of `infra` and `policy` has a `backend.tf` that points at the storage account created in Step 1. Shared keys are disabled, so the backend must use Entra authentication
 
 ```bash
 #1. Commit and push your configuration changes to the repository:
@@ -343,10 +356,9 @@ git push -u origin main
 
 > ***Important:*** because the OIDC credential is bound to the `production` environment, every job that authenticates to Azure must declare `environment: production`, including plan-only jobs on pull requests. Add pull request pipeline to make use of the pull request OIDC credential.
 
-> The Bastion was commented out because of my subscription public IP limit. Uncomment if your subscription limit allows more than 3 public IP.
 
 #2. Deploy the web and API tier of the voting application
-- Seed the database with tables and candidates, and also setting up the Virtual Machine Scale Set (VMSS) as a database user, via its managed identity. You can do this by temporary giving your local machine IP allow access to your DB server, then logging to the DB instance and executing the db/schema.sql file. Or for a more secure way, SSH into your VMSS and use `sql` command to connect to the DB and execute the script. With the second option you don't need to touch your network setting since the VMSS subnet is allowed to talk to the database subnet.
+- Seed the database with tables and candidates, and also setting up the Virtual Machine Scale Set (VMSS) as a database user, via its managed identity. You can do this by temporary giving your local machine IP allow access to your DB server, then logging to the DB instance and executing the `db/schema.sql` file. Or for a more secure way, SSH into your VMSS and use `sql` command to connect to the DB and execute the script. With the second option you don't need to touch your network setting since the VMSS subnet is allowed to talk to the database subnet.
 - On the `Actions` tab, manually deploy the `deploy-web.yaml` and `deploy-api.yaml` workflows, with the API tier first before the Web tier.
 - At first the `deploy-api.yaml` workflow will fail the **End to end health check via App gateway** step, that's fine. The reason is because you haven't deployed the web tier (`deploy-web.yaml`) which is what the App gateway talks to directly. After the web tier is deployed, if you run it again, it will pass. But the first try is enough, it actually deployed the API tier.
 - You can as well update the runner image by triggering the `runner-image.yaml`, this helps to solve the issue of using image tag of v1, and instead use the github hash as the tag.
@@ -354,6 +366,7 @@ git push -u origin main
 ### Screenshot
 
 ![Voting page diagram](docs/Screenshot1.png)
+
 
 ![Result page diagram](docs/Screenshot2.png)
 
@@ -379,7 +392,7 @@ This is a demonstration environment. These are the deliberate simplifications an
 
 | Area | Current state | Production improvement |
 |---|---|---|
-| Runner authentication | GitHub PAT stored in Key Vault | Switch to a **GitHub App** (the scaler configuration is already stubbed in `bootstrap.tf`) to remove the personal token |
+| Runner authentication | GitHub PAT stored in Key Vault | Switch to a **GitHub App** (the scaler configuration is already stubbed in `platform/bootstrap.tf`) to remove the personal token |
 | TLS certificate | Self-signed certificate issued by Key Vault | Use a CA-issued or Key Vault-integrated public CA certificate |
 | Key Vault network access | Public network enabled so the PAW can write the initial secret | Disable public access after bootstrap and reach the vault over the private endpoint only |
 

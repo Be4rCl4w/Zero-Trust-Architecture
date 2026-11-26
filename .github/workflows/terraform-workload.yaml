@@ -4,7 +4,9 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'terraform/workload/**'
+      - 'workload/infra/**'
+      - 'workload/modules/**'
+      - '!workload/modules/policy_*/**'   # policy modules belong to the policy workflow
 
   workflow_dispatch:
 
@@ -14,7 +16,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: terraform/workload
+    working-directory: workload/infra
 
 jobs:
  apply:

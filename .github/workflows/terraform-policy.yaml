@@ -4,7 +4,9 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'terraform/policies/**'
+      - 'workload/policy/**'
+      - 'workload/modules/policy_baseline/**'
+      - 'workload/modules/policy_logging/**'
 
   workflow_dispatch:
 
@@ -14,7 +16,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: terraform/policies
+    working-directory: workload/policy
 
 jobs:
   policy:
@@ -23,11 +25,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_version: 1.14.6
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
