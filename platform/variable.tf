@@ -22,12 +22,12 @@ variable "gh_url" {
 
 variable "reg_token_url" {
   type = string
-  default = "https://api.github.com/repos/Be4rCl4w/demo-repository/actions/runners/registration-token"
+  default = "https://api.github.com/repos/Be4rCl4w/Zero-Trust-Architecture/actions/runners/registration-token"
 }
 
 variable "github_repo" { 
   type = string
-  default = "demo-repository"  
+  default = "Zero-Trust-Architecture"  
 }        
 
 #variable "github_app_id" { 

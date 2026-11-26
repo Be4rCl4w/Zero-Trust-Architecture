@@ -183,7 +183,7 @@ Each decision below lists **what** was chosen, **why**, and the **trade-off** ac
 
 ### 11. Entra-only identity for data and admin access
 
-- **What:** SQL has `azuread_authentication_only = true` (no SQL logins). VMs use the `AADSSHLoginForLinux` extension with Entra-based RBAC (`Virtual Machine Administrator Login`). Admin access is designed to flow through Azure Bastion (the host resource is currently commented out), with no public IPs and no jump box.
+- **What:** SQL has `azuread_authentication_only = true` (no SQL logins). VMs use the `AADSSHLoginForLinux` extension with Entra-based RBAC (`Virtual Machine Administrator Login`). Admin access is designed to flow through Azure Bastion, with no public IPs and no jump box.
 - **Why:** Access is tied to a verified identity with MFA and Conditional Access, is revocable in one place, and is fully logged. There are no shared local passwords.
 
 ### 12. WAF in Prevention mode with end-to-end TLS
@@ -304,7 +304,8 @@ Azure requires these to be unique worldwide, so change them before you deploy:
 This creates the platform foundation. It is run once, by a human.
 **What it creates:** resource groups (`rg-tfstate`, `Demo-RG1`); the custom IaC role and the `gh-deploy` app registration with its OIDC federated credential and role assignments; the locked-down Terraform state storage account; hub and spoke VNets with peering and subnets; Key Vault (with the PAT and diagnostics); Azure Container Registry and the runner image (built with `az acr build`); the Container Apps environment and the event-driven runner job.
 
-> Note: The Log Analytics Workspace used here wasn't created in this project, it was injected via terraform `data`. Replace that by creating a new one. (Line 24 - 27)
+> Note: The Log Analytics Workspace used here wasn't created in this project, it was injected via terraform `data`. Replace that by creating a new one. (Line 24 - 27). Also update the `azuread_application_federated_identity_credential` resource with your github repository OIDC `subject claim` configuration. (From repo setting, go to action => OIDC => copy "*Default subject claim prefix*")
+
 
 ```hcl
 resource "azurerm_log_analytics_workspace" "demo" {
@@ -313,6 +314,16 @@ resource "azurerm_log_analytics_workspace" "demo" {
   resource_group_name = azurerm_resource_group.rg["Demo-RG1"].name
   sku                 = "PerGB2018"
   retention_in_days   = 30
+}
+
+
+resource "azuread_application_federated_identity_credential" "github_branch" {
+  application_id = azuread_application.github_deploy.id
+  display_name   = "github-prod-environment"
+  description    = "Federated credential for GitHub Actions locked to the production environment."
+  audiences      = ["api://AzureADTokenExchange"]
+  issuer         = "https://token.actions.githubusercontent.com"
+  subject        = "<YOUR_GITHUB_OIDC_SUBJECT_CLAIM>:environment:production"  #<====  Insert yours
 }
 ```
 
@@ -331,6 +342,7 @@ terraform init
 terraform apply -var="github_pat_token=<PATH_TO_YOUR_PAT>" 
 ```
 
+
 #### A note on bootstrap state
 
 Bootstrap creates the storage account that holds everyone else's state, so its first run uses local state. That state file contains the PAT value in clear text. Treat it as a secret: keep it on the PAW only, and do not commit it (add `*.tfstate*` and `*.tfvars` to `.gitignore`). Once the state storage exists you can optionally migrate it with `terraform init -migrate-state` and a `backend "azurerm"` block.
@@ -343,7 +355,7 @@ Once the bootstrap phase provisions the self-hosted container app runner, subseq
 In the GitHub repository:
 
 - **Settings, Environments:** create an environment named exactly production. The federated credential only trusts tokens for this environment. Add **required reviewers** for a manual approval gate.
-- Add Environment Secrets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID`, `ADMIN_OBJECT_ID (your user object ID, used as the DB server admin)`, `APP_URL (URL of the App Gateway)`, `AZURE_RESOURCE_GROUP`, `AZURE_WEBAPP_NAME`, `DB_NAME`, `DB_SERVER`, `KEY_VAULT_NAME` and a `VMSS_PUBLIC_KEY` variable. These are identifiers, not credentials, since there is no client secret anywhere.
+- Add Environment Secrets `AZURE_CLIENT_ID` (Client/Application ID of the `gh-deploy` app registration), `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID`, `ADMIN_OBJECT_ID (your user object ID, used as the DB server admin)`, `APP_URL (URL of the App Gateway)`, `AZURE_RESOURCE_GROUP`, `AZURE_WEBAPP_NAME`, `DB_NAME`, `DB_SERVER`, `KEY_VAULT_NAME` and a `VMSS_PUBLIC_KEY` variable. These are identifiers, not credentials, since there is no client secret anywhere.
 
 > Each of `infra` and `policy` has a `backend.tf` that points at the storage account created in Step 1. Shared keys are disabled, so the backend must use Entra authentication
 
@@ -359,6 +371,19 @@ git push -u origin main
 
 #2. Deploy the web and API tier of the voting application
 - Seed the database with tables and candidates, and also setting up the Virtual Machine Scale Set (VMSS) as a database user, via its managed identity. You can do this by temporary giving your local machine IP allow access to your DB server, then logging to the DB instance and executing the `db/schema.sql` file. Or for a more secure way, SSH into your VMSS and use `sql` command to connect to the DB and execute the script. With the second option you don't need to touch your network setting since the VMSS subnet is allowed to talk to the database subnet.
+
+```bash
+az extension add --name ssh
+
+az extension add --name bastion
+
+az network bastion ssh `
+  --name <bastion-name> `
+  --resource-group <rg> `
+  --target-resource-id /subscriptions/<sub-id>/resourceGroups/<rg>/providers/Microsoft.Compute/virtualMachineScaleSets/<vmss-name>/virtualMachines/<instance-id> `
+  --auth-type AAD
+  ```
+
 - On the `Actions` tab, manually deploy the `deploy-web.yaml` and `deploy-api.yaml` workflows, with the API tier first before the Web tier.
 - At first the `deploy-api.yaml` workflow will fail the **End to end health check via App gateway** step, that's fine. The reason is because you haven't deployed the web tier (`deploy-web.yaml`) which is what the App gateway talks to directly. After the web tier is deployed, if you run it again, it will pass. But the first try is enough, it actually deployed the API tier.
 - You can as well update the runner image by triggering the `runner-image.yaml`, this helps to solve the issue of using image tag of v1, and instead use the github hash as the tag.
@@ -369,6 +394,7 @@ git push -u origin main
 
 
 ![Result page diagram](docs/Screenshot2.png)
+
 
 #### Recommended rollout order for policy
 

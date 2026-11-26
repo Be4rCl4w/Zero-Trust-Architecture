@@ -201,7 +201,7 @@ resource "azuread_application_federated_identity_credential" "github_branch" {
   description    = "Federated credential for GitHub Actions locked to the production environment."
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
-  subject        = "repo:Be4rCl4w@121987346/demo-repository@1360757500:ref:refs/heads/main"
+  subject        = "repo:Be4rCl4w@121987346/Zero-Trust-Architecture@1445506664:environment:production"
 }
 
 resource "azuread_application_federated_identity_credential" "github_PR" {
@@ -210,7 +210,7 @@ resource "azuread_application_federated_identity_credential" "github_PR" {
   description    = "Federated credential for GitHub Actions PR."
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
-  subject        = "repo:Be4rCl4w@121987346/demo-repository@1360757500:pull_request"
+  subject        = "repo:Be4rCl4w@121987346/Zero-Trust-Architecture@1445506664:pull_request"
 }
 
 resource "azurerm_storage_account" "tfstate" {
