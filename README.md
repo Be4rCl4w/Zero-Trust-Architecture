@@ -55,7 +55,7 @@ Most cloud security failures are not exotic attacks. They are **ordinary misconf
 2. **Standing credentials** — CI/CD pipelines armed with long-lived secrets (client secrets, subscription-level `Contributor`) that are powerful and leak-prone.
 3. **Over-privileged automation** — deployment identities that can do anything, including modifying their own permissions.
 4. **Compliance drift** — resources deployed manually, with no enforcement that security baselines (no public SQL, WAF enabled, TLS 1.2+, NSGs everywhere) are actually met.
-5  **CI/CD runners on the public internet** - To deploy to private resources, teams either open firewalls to GitHub-hosted runner IP ranges or put public endpoints back on everything.
+5. **CI/CD runners on the public internet** - To deploy to private resources, teams either open firewalls to GitHub-hosted runner IP ranges or put public endpoints back on everything.
 
 The question this project answers: **how do you build an Azure landing zone where every packet, every identity, and every change is explicitly verified — and where the deployment pipeline itself cannot be abused to escalate privileges?**
 
